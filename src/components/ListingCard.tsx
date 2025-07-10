@@ -15,12 +15,14 @@ export default function ListingCard({
 	onDelete,
 	showActions = false
 }: ListingCardProps) {
-	const statusColor = listing.status === 'lost'
-		? 'bg-red-100 text-red-700 border border-red-200'
-		: 'bg-green-100 text-green-700 border border-green-200';
+	const isLost = listing.status === 'lost';
+	const cardColor = isLost ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200';
+	const statusColor = isLost
+		? 'bg-red-200 text-red-800 border border-red-300'
+		: 'bg-green-200 text-green-800 border border-green-300';
 
 	return (
-		<div className="bg-white rounded-xl shadow-md border p-5 hover:shadow-lg hover:scale-[1.03] transition-transform max-w-[16rem] mx-auto flex flex-col">
+		<div className={`rounded-2xl shadow-lg border p-6 hover:shadow-xl hover:scale-[1.04] transition-transform max-w-[17rem] mx-auto flex flex-col ${cardColor} animate-fade-in`}>
 			{listing.image_url && (
 				<div className="mb-4 flex justify-center">
 					<div className="w-full max-w-[11rem] h-28 sm:h-32 overflow-hidden rounded-lg border shadow-sm">
@@ -33,11 +35,11 @@ export default function ListingCard({
 				</div>
 			)}
 			<div className="flex items-center justify-between mb-2">
-				<h3 className="text-lg font-semibold text-gray-900 truncate" title={listing.title}>{listing.title}</h3>
-				<span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColor}`}>{listing.status}</span>
+				<h3 className="text-lg font-bold text-gray-900 truncate" title={listing.title}>{listing.title}</h3>
+				<span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm ${statusColor}`}>{listing.status}</span>
 			</div>
-			<p className="text-gray-600 text-sm mb-3 line-clamp-3 min-h-[2.5em]">{listing.description}</p>
-			<div className="space-y-1 text-xs text-gray-500 mb-2">
+			<p className="text-gray-700 text-sm mb-3 line-clamp-3 min-h-[2.5em]">{listing.description}</p>
+			<div className="space-y-1 text-xs text-gray-600 mb-2">
 				<div className="flex items-center gap-1">
 					<span className="font-medium">Location:</span>
 					<span className="truncate" title={listing.location}>{listing.location}</span>

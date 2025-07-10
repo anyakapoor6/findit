@@ -6,6 +6,158 @@ import { getCurrentUser } from '../../lib/auth';
 import { uploadListingImage } from '../../lib/storage';
 import type { CreateListingData } from '../../lib/types';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import styled from 'styled-components';
+import Link from 'next/link';
+
+const PageContainer = styled.div`
+  min-height: 80vh;
+  background: linear-gradient(to bottom, #e0e7ef 30%, #fff 100%);
+  padding: 2.5rem 0.5rem;
+`;
+const FormContainer = styled.div`
+  max-width: 36rem;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 1.5rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 2.5rem 2rem;
+  border: 1px solid #dbeafe;
+`;
+const Heading = styled.h1`
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 2rem;
+  text-align: center;
+`;
+const Label = styled.label`
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 0.5rem;
+`;
+const StyledInput = styled.input`
+  width: 100%;
+  border: 1px solid #bbb;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1.1rem;
+  color: #111;
+  background: #fff;
+  margin-bottom: 1rem;
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px #bfdbfe;
+  }
+`;
+const StyledSelect = styled.select`
+  width: 100%;
+  border: 1px solid #bbb;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1.1rem;
+  color: #111;
+  background: #fff;
+  margin-bottom: 1rem;
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px #bfdbfe;
+  }
+`;
+const StyledTextArea = styled.textarea`
+  width: 100%;
+  border: 1px solid #bbb;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1.1rem;
+  color: #111;
+  background: #fff;
+  margin-bottom: 1rem;
+  resize: vertical;
+  min-height: 100px;
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px #bfdbfe;
+  }
+`;
+const SubmitButton = styled.button`
+  width: 100%;
+  background: #2563eb;
+  color: #fff;
+  padding: 0.9rem 0;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 1.2rem;
+  border: none;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  transition: background 0.2s;
+  &:hover {
+    background: #1d4ed8;
+  }
+  &:disabled {
+    opacity: 0.5;
+  }
+`;
+const ErrorMsg = styled.p`
+  color: #111;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 1rem;
+`;
+const UploadBox = styled.div`
+  width: 100%;
+  border: 2px dashed #bbb;
+  border-radius: 0.75rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  background: #f1f5f9;
+  margin-bottom: 1rem;
+`;
+const UploadLabel = styled.label`
+  cursor: pointer;
+  color: #2563eb;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.5rem;
+`;
+const UploadedImage = styled.img`
+  display: block;
+  margin: 0.5rem auto 1rem auto;
+  max-width: 180px;
+  max-height: 180px;
+  border-radius: 0.75rem;
+  border: 2px solid #dbeafe;
+`;
+const RemoveButton = styled.button`
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  &:hover { background: #b91c1c; }
+`;
+const NavLinks = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 2.5rem;
+`;
+const PageLink = styled(Link)`
+  color: #2563eb;
+  font-size: 1.15rem;
+  font-weight: 600;
+  text-decoration: underline;
+  &:hover { color: #1d4ed8; }
+`;
 
 export default function CreateListingPage() {
 	const router = useRouter();
@@ -27,7 +179,7 @@ export default function CreateListingPage() {
 		const checkAuth = async () => {
 			const currentUser = await getCurrentUser();
 			if (!currentUser) {
-				router.push('/auth');
+				router.push('/auth?redirect=/create-listing');
 				return;
 			}
 			setUser(currentUser);
@@ -101,170 +253,119 @@ export default function CreateListingPage() {
 
 	if (!user) {
 		return (
-			<div className="flex justify-center items-center min-h-[60vh]">
+			<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
 				<LoadingSpinner size="lg" text="Checking authentication..." />
 			</div>
 		);
 	}
 
 	return (
-		<div className="max-w-md mx-auto px-4">
-			<div className="bg-white rounded-lg shadow-md p-8">
-				<h1 className="text-3xl font-bold mb-6 text-center">Create New Listing</h1>
-
-				<form onSubmit={handleSubmit} className="space-y-6">
+		<PageContainer>
+			<FormContainer>
+				<Heading>Create New Listing</Heading>
+				<form onSubmit={handleSubmit}>
 					{/* Status */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
-						<select
+						<Label>Status *</Label>
+						<StyledSelect
 							name="status"
 							value={formData.status}
 							onChange={handleInputChange}
-							className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
 							required
 						>
 							<option value="lost">Lost Item</option>
 							<option value="found">Found Item</option>
-						</select>
+						</StyledSelect>
 					</div>
-
 					{/* Title */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
-						<input
+						<Label>Title *</Label>
+						<StyledInput
 							type="text"
 							name="title"
 							value={formData.title}
 							onChange={handleInputChange}
 							placeholder="Brief description of the item"
-							className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
 							required
 						/>
 					</div>
-
 					{/* Description */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
-						<textarea
+						<Label>Description *</Label>
+						<StyledTextArea
 							name="description"
 							value={formData.description}
 							onChange={handleInputChange}
 							placeholder="Detailed description of the item"
 							rows={4}
-							className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
 							required
 						/>
 					</div>
-
 					{/* Location */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
-						<input
+						<Label>Location *</Label>
+						<StyledInput
 							type="text"
 							name="location"
 							value={formData.location}
 							onChange={handleInputChange}
 							placeholder="Where the item was lost/found"
-							className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
 							required
 						/>
 					</div>
-
 					{/* Date */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-						<input
+						<Label>Date *</Label>
+						<StyledInput
 							type="date"
 							name="date"
 							value={formData.date}
 							onChange={handleInputChange}
-							className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
 							required
 						/>
 					</div>
-
 					{/* Image Upload */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Item Image (Optional)
-						</label>
-
+						<Label>Item Image (Optional)</Label>
 						{!imagePreview ? (
-							<div className="w-40 sm:w-56 mx-auto border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+							<UploadBox>
 								<input
 									type="file"
 									accept="image/*"
 									onChange={handleFileChange}
-									className="hidden"
+									style={{ display: 'none' }}
 									id="image-upload"
 								/>
-								<label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center space-y-2">
-									<svg
-										className="w-8 h-8 text-gray-400 inline-block"
-										style={{ width: '2rem', height: '2rem', minWidth: '2rem', minHeight: '2rem' }}
-										stroke="currentColor"
-										fill="none"
-										viewBox="0 0 48 48"
-									>
-										<path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-									</svg>
-									<div className="text-gray-600">
-										<span className="font-medium">Click to upload</span> or drag and drop
-									</div>
-									<p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
-								</label>
-							</div>
+								<UploadLabel htmlFor="image-upload">
+									Click to upload or drag and drop
+								</UploadLabel>
+								<div style={{ color: '#666', fontSize: '0.95rem' }}>PNG, JPG, GIF up to 5MB</div>
+							</UploadBox>
 						) : (
-							<div className="space-y-4">
-								<div className="flex justify-center">
-									<div className="relative w-32 h-32 sm:w-48 sm:h-48">
-										<img
-											src={imagePreview}
-											alt="Preview"
-											className="w-32 h-32 sm:w-48 sm:h-48 object-cover rounded-lg border-2 border-gray-200"
-										/>
-										<button
-											type="button"
-											onClick={removeImage}
-											className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center hover:bg-red-600 transition-colors text-xs sm:text-sm font-bold"
-										>
-											×
-										</button>
-									</div>
-								</div>
-								<p className="text-sm text-gray-500 text-center">
-									Selected: {selectedFile?.name}
-								</p>
-							</div>
+							<UploadBox>
+								<UploadedImage src={imagePreview} alt="Preview" />
+								<RemoveButton type="button" onClick={removeImage}>Remove</RemoveButton>
+								<div style={{ color: '#666', fontSize: '0.95rem', marginTop: '0.5rem' }}>Selected: {selectedFile?.name}</div>
+							</UploadBox>
 						)}
 					</div>
-
 					{/* Error Message */}
-					{error && (
-						<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-							{error}
-						</div>
-					)}
-
+					{error && <ErrorMsg>{error}</ErrorMsg>}
 					{/* Buttons */}
-					<div className="flex gap-4">
-						<button
-							type="submit"
-							disabled={loading}
-							className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-						>
-							{loading ? 'Creating...' : 'Create Listing'}
-						</button>
+					<div style={{ display: 'flex', gap: '1rem', paddingTop: '0.5rem' }}>
+						<SubmitButton type="submit" disabled={loading}>
+							{loading ? 'Submitting...' : 'Create Listing'}
+						</SubmitButton>
 						<button
 							type="button"
 							onClick={() => router.back()}
-							className="px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+							style={{ padding: '0.9rem 2rem', border: '1px solid #bbb', borderRadius: '0.5rem', background: '#f1f5f9', color: '#111', fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer' }}
 						>
 							Cancel
 						</button>
 					</div>
 				</form>
-			</div>
-		</div>
+			</FormContainer>
+		</PageContainer>
 	);
 }

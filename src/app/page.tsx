@@ -5,6 +5,78 @@ import ListingCard from '../components/ListingCard';
 import { fetchListings } from '../lib/listings';
 import type { Listing } from '../lib/types';
 import LoadingSpinner from '../components/LoadingSpinner';
+import styled from 'styled-components';
+
+const Heading = styled.h1`
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #111;
+`;
+const Subheading = styled.p`
+  font-size: 1.25rem;
+  color: #222;
+  margin-bottom: 2rem;
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
+`;
+const FilterBar = styled.div`
+  background: rgba(255,255,255,0.95);
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #dbeafe;
+  margin-bottom: 1rem;
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+`;
+const FilterInput = styled.input`
+  border: 1px solid #bbb;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  color: #111;
+  font-size: 1rem;
+  background: #fff;
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px #bfdbfe;
+  }
+  @media (min-width: 768px) {
+    width: 33%;
+  }
+`;
+const FilterSelect = styled.select`
+  border: 1px solid #bbb;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  color: #111;
+  font-size: 1rem;
+  background: #fff;
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px #bfdbfe;
+  }
+  @media (min-width: 768px) {
+    width: 25%;
+  }
+`;
+const SectionHeading = styled.h2`
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #111;
+`;
 
 export default function Home() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -46,64 +118,62 @@ export default function Home() {
   });
 
   return (
-    <section className="min-h-[80vh] bg-gradient-to-b from-gray-50 to-blue-50/30 py-8">
-      <div className="max-w-4xl mx-auto px-2 sm:px-6 space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4 text-blue-600">Welcome to FindIt</h1>
-          <p className="text-lg text-gray-700 mb-8 max-w-xl mx-auto">
+    <section style={{ minHeight: '80vh', background: 'linear-gradient(to bottom, #f9fafb, #e0e7ef 30%)', padding: '2rem 0' }}>
+      <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1.5rem', display: 'block' }}>
+        <div style={{ textAlign: 'center' }}>
+          <Heading>Welcome to FindIt</Heading>
+          <Subheading>
             FindIt is a cross-platform Lost & Found platform. Report lost or found items, browse listings, and help reunite people with their belongings.
-          </p>
+          </Subheading>
         </div>
-
         {/* Search & Filter UI */}
-        <div className="bg-white/90 rounded-xl shadow-md p-4 flex flex-col md:flex-row gap-4 items-center justify-between border border-blue-100">
-          <input
+        <FilterBar>
+          <FilterInput
             type="text"
             placeholder="Search by keyword..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 w-full md:w-1/3 focus:ring-2 focus:ring-blue-200 focus:outline-none"
           />
-          <select
+          <FilterSelect
             value={status}
             onChange={e => setStatus(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 w-full md:w-1/4 focus:ring-2 focus:ring-blue-200 focus:outline-none"
           >
             <option value="all">All</option>
             <option value="lost">Lost</option>
             <option value="found">Found</option>
-          </select>
-          <input
+          </FilterSelect>
+          <FilterInput
             type="text"
             placeholder="Filter by location..."
             value={location}
             onChange={e => setLocation(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 w-full md:w-1/3 focus:ring-2 focus:ring-blue-200 focus:outline-none"
           />
-        </div>
-
+        </FilterBar>
+        <hr style={{ borderColor: '#dbeafe', marginBottom: '2rem' }} />
         <div>
-          <h2 className="text-2xl font-semibold mb-6">Recent Listings</h2>
+          <SectionHeading>Recent Listings</SectionHeading>
           {loading ? (
-            <div className="flex justify-center py-12">
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem 0' }}>
               <LoadingSpinner size="md" text="Loading listings..." />
             </div>
           ) : error ? (
-            <div className="text-center py-12 bg-white rounded-lg border">
-              <p className="text-red-500 text-lg mb-4">{error}</p>
+            <div style={{ textAlign: 'center', padding: '3rem 0', background: '#fff', borderRadius: '0.5rem', border: '1px solid #eee' }}>
+              <p style={{ color: '#dc2626', fontSize: '1.125rem', marginBottom: '1rem' }}>{error}</p>
             </div>
           ) : filteredListings.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 justify-center">
               {filteredListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
+                <div key={listing.id} className="animate-fade-in">
+                  <ListingCard listing={listing} />
+                </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-white rounded-lg border">
-              <p className="text-gray-500 text-lg mb-4">No listings match your search.</p>
+            <div style={{ textAlign: 'center', padding: '3rem 0', background: '#fff', borderRadius: '0.5rem', border: '1px solid #eee' }}>
+              <p style={{ color: '#666', fontSize: '1.125rem', marginBottom: '1rem' }}>No listings match your search.</p>
               <Link
                 href="/create-listing"
-                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors"
+                style={{ display: 'inline-block', background: '#2563eb', color: '#fff', padding: '0.75rem 2rem', borderRadius: '0.375rem', fontWeight: 600, textDecoration: 'none', transition: 'background 0.2s' }}
               >
                 Create Your First Listing
               </Link>

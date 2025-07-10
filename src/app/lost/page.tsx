@@ -1,6 +1,35 @@
+'use client'
 import ListingCard from '../../components/ListingCard';
 import { fetchListingsByStatus } from '../../lib/listings';
 import type { Listing } from '../../lib/types';
+import styled from 'styled-components';
+
+const Heading = styled.h1`
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #111;
+  text-align: center;
+`;
+const Subheading = styled.p`
+  font-size: 1.25rem;
+  color: #222;
+  margin-bottom: 2rem;
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+`;
+const SectionHeading = styled.h2`
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #111;
+`;
+const EmptyText = styled.p`
+  color: #666;
+  font-size: 1.125rem;
+`;
 
 async function getLostListings(): Promise<Listing[]> {
 	try {
@@ -15,16 +44,15 @@ export default async function LostPage() {
 	const listings = await getLostListings();
 
 	return (
-		<section className="space-y-8">
-			<div className="text-center">
-				<h1 className="text-4xl font-bold mb-4 text-red-600">Lost Items</h1>
-				<p className="text-lg text-gray-700 mb-8 max-w-xl mx-auto">
-					Browse items that have been reported as lost. Help reunite people with their belongings.
-				</p>
-			</div>
-
+		<section style={{ marginBottom: '2rem' }}>
 			<div>
-				<h2 className="text-2xl font-semibold mb-6">Recent Lost Items</h2>
+				<Heading>Lost Items</Heading>
+				<Subheading>
+					Browse items that have been reported as lost. Help reunite people with their belongings.
+				</Subheading>
+			</div>
+			<div>
+				<SectionHeading>Recent Lost Items</SectionHeading>
 				{listings.length > 0 ? (
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 						{listings.map((listing) => (
@@ -32,8 +60,8 @@ export default async function LostPage() {
 						))}
 					</div>
 				) : (
-					<div className="text-center py-12 bg-white rounded-lg border">
-						<p className="text-gray-500 text-lg">No lost items reported yet.</p>
+					<div style={{ textAlign: 'center', padding: '3rem 0', background: '#fff', borderRadius: '0.5rem', border: '1px solid #eee' }}>
+						<EmptyText>No lost items reported yet.</EmptyText>
 					</div>
 				)}
 			</div>
