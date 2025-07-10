@@ -8,6 +8,7 @@ import type { CreateListingData } from '../../lib/types';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import styled from 'styled-components';
 import Link from 'next/link';
+import SignInModal from '../../components/SignInModal';
 
 const PageContainer = styled.div`
   min-height: 80vh;
@@ -174,18 +175,36 @@ export default function CreateListingPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [user, setUser] = useState<any>(null);
+	const [showSignIn, setShowSignIn] = useState(false);
 
 	useEffect(() => {
 		const checkAuth = async () => {
 			const currentUser = await getCurrentUser();
 			if (!currentUser) {
-				router.push('/auth?redirect=/create-listing');
+				setShowSignIn(true);
 				return;
 			}
 			setUser(currentUser);
 		};
 		checkAuth();
 	}, [router]);
+
+	const handleSignInSuccess = () => {
+		setShowSignIn(false);
+		// Re-run the auth/profile check
+		setTimeout(() => window.location.reload(), 100);
+	};
+
+	// Show modal if not signed in
+	if (showSignIn) {
+		return (
+			<SignInModal
+				open={showSignIn}
+				onClose={() => router.push('/')}
+				onSignIn={handleSignInSuccess}
+			/>
+		);
+	}
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
 		const { name, value } = e.target;

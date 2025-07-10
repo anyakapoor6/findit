@@ -1,11 +1,13 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import ListingCard from '../components/ListingCard';
 import { fetchListings } from '../lib/listings';
 import type { Listing } from '../lib/types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import styled from 'styled-components';
+import SignInModal from '../components/SignInModal';
+import { getCurrentUser } from '../lib/auth';
 
 const Heading = styled.h1`
   font-size: 2.5rem;
@@ -99,6 +101,9 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [location, setLocation] = useState('');
+  const [showSignIn, setShowSignIn] = useState(false);
+  const [userChecked, setUserChecked] = useState(false);
+  const userRef = useRef<any>(null);
 
   useEffect(() => {
     const loadListings = async () => {
@@ -115,6 +120,35 @@ export default function Home() {
     };
     loadListings();
   }, []);
+
+  useEffect(() => {
+    // Check user once on mount
+    const checkUser = async () => {
+      const user = await getCurrentUser();
+      userRef.current = user;
+      setUserChecked(true);
+    };
+    checkUser();
+  }, []);
+
+  useEffect(() => {
+    if (!userChecked) return;
+    if (userRef.current) return;
+    // Only attach scroll listener for non-signed-in users
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowSignIn(true);
+        window.removeEventListener('scroll', handleScroll);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [userChecked]);
+
+  const handleSignInSuccess = () => {
+    setShowSignIn(false);
+    setTimeout(() => window.location.reload(), 100);
+  };
 
   // Filtered listings
   const filteredListings = listings.filter(listing => {
@@ -191,6 +225,11 @@ export default function Home() {
           )}
         </div>
       </div>
+      <SignInModal
+        open={showSignIn}
+        onClose={() => setShowSignIn(false)}
+        onSignIn={handleSignInSuccess}
+      />
     </section>
   );
 }

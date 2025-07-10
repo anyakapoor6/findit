@@ -1,15 +1,27 @@
 import { supabase } from '../utils/supabaseClient';
 import type { User, AuthState } from './types';
+import { syncUserProfile } from './users';
 
 // Sign up with email and password
-export async function signUp(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
+export async function signUp(email: string, password: string, name?: string): Promise<{ user: User | null; error: string | null }> {
 	const { data, error } = await supabase.auth.signUp({
 		email,
 		password,
+		options: {
+			data: {
+				name: name || ''
+			}
+		}
 	});
 
 	if (error) {
 		return { user: null, error: error.message };
+	}
+
+	// Sync user profile to users table
+	if (data.user) {
+		console.log('Creating user profile for new user:', data.user.id);
+		await syncUserProfile(data.user.id, data.user.email!, name);
 	}
 
 	return {
@@ -31,6 +43,13 @@ export async function signIn(email: string, password: string): Promise<{ user: U
 
 	if (error) {
 		return { user: null, error: error.message };
+	}
+
+	// Sync user profile to users table
+	if (data.user) {
+		console.log('Syncing user profile for existing user:', data.user.id);
+		const name = data.user.user_metadata?.name;
+		await syncUserProfile(data.user.id, data.user.email!, name);
 	}
 
 	return {
@@ -66,6 +85,11 @@ export async function getCurrentUser(): Promise<User | null> {
 export function onAuthStateChange(callback: (authState: AuthState) => void) {
 	return supabase.auth.onAuthStateChange(async (event, session) => {
 		if (event === 'SIGNED_IN' && session?.user) {
+			// Sync user profile when they sign in
+			console.log('Auth state change: user signed in, syncing profile');
+			const name = session.user.user_metadata?.name;
+			await syncUserProfile(session.user.id, session.user.email!, name);
+
 			callback({
 				user: {
 					id: session.user.id,

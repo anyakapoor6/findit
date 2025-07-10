@@ -24,6 +24,18 @@ export async function fetchListingsByStatus(status: 'lost' | 'found'): Promise<L
 	return data as Listing[];
 }
 
+// Fetch listings by user ID
+export async function fetchUserListings(userId: string): Promise<Listing[]> {
+	const { data, error } = await supabase
+		.from('listings')
+		.select('*')
+		.eq('user_id', userId)
+		.order('created_at', { ascending: false });
+
+	if (error) throw error;
+	return data as Listing[];
+}
+
 // Add a new listing
 export async function addListing(listingData: CreateListingData): Promise<Listing> {
 	const { data: { user } } = await supabase.auth.getUser();

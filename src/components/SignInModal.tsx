@@ -17,6 +17,7 @@ const ModalBox = styled.div`
   box-shadow: 0 4px 32px rgba(0,0,0,0.18);
   padding: 2.5rem 2rem 2rem 2rem;
   min-width: 340px;
+  width: 400px;
   max-width: 95vw;
   position: relative;
 `;
@@ -90,59 +91,82 @@ const CloseButton = styled.button`
 `;
 
 export default function SignInModal({ open, onClose, onSignIn }: { open: boolean, onClose: () => void, onSignIn?: () => void }) {
-	const [email, setEmail] = useState('');
-	const [password, setPassword] = useState('');
-	const [loading, setLoading] = useState(false);
-	const [message, setMessage] = useState('');
-	const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
 
-	if (!open) return null;
+  if (!open) return null;
 
-	const handleAuth = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setLoading(true);
-		setMessage('');
-		const result = isSignUp
-			? await signUp(email, password)
-			: await signIn(email, password);
-		if (result.error) {
-			setMessage(result.error);
-		} else {
-			setMessage(isSignUp ? 'Check your email to confirm sign up.' : 'Signed in!');
-			if (onSignIn && !isSignUp) onSignIn();
-		}
-		setLoading(false);
-	};
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+    if (isSignUp && !name.trim()) {
+      setMessage('Name is required for sign up.');
+      setLoading(false);
+      return;
+    }
+    const result = isSignUp
+      ? await signUp(email, password, name)
+      : await signIn(email, password);
+    if (result.error) {
+      setMessage(result.error);
+    } else {
+      setMessage(isSignUp ? 'Check your email to confirm sign up.' : 'Signed in!');
+      if (onSignIn && !isSignUp) onSignIn();
+    }
+    setLoading(false);
+  };
 
-	return (
-		<Overlay>
-			<ModalBox>
-				<CloseButton onClick={onClose} aria-label="Close">×</CloseButton>
-				<Heading>{isSignUp ? 'Sign Up' : 'Sign In'}</Heading>
-				<form onSubmit={handleAuth}>
-					<StyledInput
-						type="email"
-						placeholder="Email"
-						value={email}
-						onChange={e => setEmail(e.target.value)}
-						required
-					/>
-					<StyledInput
-						type="password"
-						placeholder="Password"
-						value={password}
-						onChange={e => setPassword(e.target.value)}
-						required
-					/>
-					<StyledButton type="submit" disabled={loading}>
-						{loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
-					</StyledButton>
-				</form>
-				<SwitchButton type="button" onClick={() => setIsSignUp(s => !s)}>
-					{isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-				</SwitchButton>
-				{message && <Message error={!!message && message.toLowerCase().includes('error')}>{message}</Message>}
-			</ModalBox>
-		</Overlay>
-	);
+  const handleSwitchMode = () => {
+    setIsSignUp(s => !s);
+    setMessage('');
+    setEmail('');
+    setPassword('');
+    setName('');
+  };
+
+  return (
+    <Overlay>
+      <ModalBox>
+        <CloseButton onClick={onClose} aria-label="Close">×</CloseButton>
+        <Heading>{isSignUp ? 'Sign Up' : 'Sign In'}</Heading>
+        <form onSubmit={handleAuth}>
+          {isSignUp && (
+            <StyledInput
+              type="text"
+              placeholder="Full Name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              required
+            />
+          )}
+          <StyledInput
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+          />
+          <StyledInput
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+          />
+          <StyledButton type="submit" disabled={loading}>
+            {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+          </StyledButton>
+        </form>
+        <SwitchButton type="button" onClick={handleSwitchMode}>
+          {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+        </SwitchButton>
+        {message && <Message error={!!message && message.toLowerCase().includes('error')}>{message}</Message>}
+      </ModalBox>
+    </Overlay>
+  );
 } 
