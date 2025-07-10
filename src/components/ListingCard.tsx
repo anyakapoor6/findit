@@ -1,4 +1,5 @@
 import type { Listing } from '../lib/types';
+import styled, { css } from 'styled-components';
 
 interface ListingCardProps {
 	listing: Listing;
@@ -8,6 +9,134 @@ interface ListingCardProps {
 	showActions?: boolean;
 }
 
+const CARD_WIDTH = '320px';
+const CARD_HEIGHT = '470px';
+
+const Card = styled.div<{ $isLost: boolean }>`
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  border: 2px solid;
+  padding: 1.5rem;
+  width: ${CARD_WIDTH};
+  height: ${CARD_HEIGHT};
+  min-width: ${CARD_WIDTH};
+  min-height: ${CARD_HEIGHT};
+  max-width: ${CARD_WIDTH};
+  max-height: ${CARD_HEIGHT};
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: ${({ $isLost }) => ($isLost ? '#fef2f2' : '#f0fdf4')};
+  border-color: ${({ $isLost }) => ($isLost ? '#fecaca' : '#bbf7d0')};
+  transition: box-shadow 0.2s, transform 0.2s;
+  &:hover {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+    transform: scale(1.04);
+  }
+`;
+const ImageBox = styled.div`
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 2rem auto;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1.5px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+`;
+const CardImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+const CardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+`;
+const Title = styled.h3`
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #111;
+  margin: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+const Status = styled.span<{ $isLost: boolean }>`
+  padding: 0.3rem 1rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  border: 1.5px solid;
+  ${({ $isLost }) => $isLost ? css`
+    background: #fecaca;
+    color: #b91c1c;
+    border-color: #fca5a5;
+  ` : css`
+    background: #bbf7d0;
+    color: #166534;
+    border-color: #4ade80;
+  `}
+`;
+const Description = styled.p`
+  color: #222;
+  font-size: 1.08rem;
+  margin-bottom: 1.1rem;
+  min-height: 2.5em;
+  font-weight: 500;
+`;
+const Info = styled.div`
+  font-size: 1.05rem;
+  color: #333;
+  margin-bottom: 0.7rem;
+`;
+const InfoRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+`;
+const InfoLabel = styled.span`
+  font-weight: 700;
+  color: #111;
+`;
+const InfoValue = styled.span`
+  color: #444;
+  font-weight: 500;
+`;
+const Actions = styled.div`
+  display: flex;
+  gap: 0.7rem;
+  padding-top: 1rem;
+  border-top: 1.5px solid #e5e7eb;
+  margin-top: auto;
+`;
+const ActionButton = styled.button`
+  flex: 1;
+  padding: 0.7rem 0;
+  border-radius: 0.5rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: background 0.18s;
+  &.view { background: #2563eb; color: #fff; }
+  &.view:hover { background: #1d4ed8; }
+  &.edit { background: #f1f5f9; color: #222; border: 1.5px solid #bbb; }
+  &.edit:hover { background: #e0e7ef; }
+  &.delete { background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; }
+  &.delete:hover { background: #fecaca; }
+`;
+
 export default function ListingCard({
 	listing,
 	onView,
@@ -16,67 +145,47 @@ export default function ListingCard({
 	showActions = false
 }: ListingCardProps) {
 	const isLost = listing.status === 'lost';
-	const cardColor = isLost ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200';
-	const statusColor = isLost
-		? 'bg-red-200 text-red-800 border border-red-300'
-		: 'bg-green-200 text-green-800 border border-green-300';
-
 	return (
-		<div className={`rounded-2xl shadow-lg border p-6 hover:shadow-xl hover:scale-[1.04] transition-transform max-w-[17rem] mx-auto flex flex-col ${cardColor} animate-fade-in`}>
+		<Card $isLost={isLost}>
 			{listing.image_url && (
-				<div className="mb-4 flex justify-center">
-					<div className="w-full max-w-[11rem] h-28 sm:h-32 overflow-hidden rounded-lg border shadow-sm">
-						<img
-							src={listing.image_url}
-							alt={listing.title}
-							className="w-full h-full object-cover"
-						/>
-					</div>
-				</div>
+				<ImageBox>
+					<CardImage src={listing.image_url} alt={listing.title} />
+				</ImageBox>
 			)}
-			<div className="flex items-center justify-between mb-2">
-				<h3 className="text-lg font-bold text-gray-900 truncate" title={listing.title}>{listing.title}</h3>
-				<span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm ${statusColor}`}>{listing.status}</span>
-			</div>
-			<p className="text-gray-700 text-sm mb-3 line-clamp-3 min-h-[2.5em]">{listing.description}</p>
-			<div className="space-y-1 text-xs text-gray-600 mb-2">
-				<div className="flex items-center gap-1">
-					<span className="font-medium">Location:</span>
-					<span className="truncate" title={listing.location}>{listing.location}</span>
-				</div>
-				<div className="flex items-center gap-1">
-					<span className="font-medium">Date:</span>
-					<span>{new Date(listing.date).toLocaleDateString()}</span>
-				</div>
-			</div>
+			<CardHeader>
+				<Title title={listing.title}>{listing.title}</Title>
+				<Status $isLost={isLost}>{listing.status}</Status>
+			</CardHeader>
+			<Description>{listing.description}</Description>
+			<Info>
+				<InfoRow>
+					<InfoLabel>Location:</InfoLabel>
+					<InfoValue title={listing.location}>{listing.location}</InfoValue>
+				</InfoRow>
+				<InfoRow>
+					<InfoLabel>Date:</InfoLabel>
+					<InfoValue>{new Date(listing.date).toLocaleDateString()}</InfoValue>
+				</InfoRow>
+			</Info>
 			{showActions && (
-				<div className="flex gap-2 pt-4 border-t mt-auto">
+				<Actions>
 					{onView && (
-						<button
-							onClick={() => onView(listing)}
-							className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-						>
+						<ActionButton className="view" onClick={() => onView(listing)}>
 							View Details
-						</button>
+						</ActionButton>
 					)}
 					{onEdit && (
-						<button
-							onClick={() => onEdit(listing)}
-							className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-						>
+						<ActionButton className="edit" onClick={() => onEdit(listing)}>
 							Edit
-						</button>
+						</ActionButton>
 					)}
 					{onDelete && (
-						<button
-							onClick={() => onDelete(listing)}
-							className="px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50 transition-colors"
-						>
+						<ActionButton className="delete" onClick={() => onDelete(listing)}>
 							Delete
-						</button>
+						</ActionButton>
 					)}
-				</div>
+				</Actions>
 			)}
-		</div>
+		</Card>
 	);
 } 

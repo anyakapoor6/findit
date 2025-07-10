@@ -77,6 +77,18 @@ const SectionHeading = styled.h2`
   margin-bottom: 1.5rem;
   color: #111;
 `;
+const ListingsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  justify-content: center;
+  @media (min-width: 600px) {
+    grid-template-columns: 1fr 1fr;
+  }
+  @media (min-width: 900px) {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+`;
 
 export default function Home() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -161,13 +173,11 @@ export default function Home() {
               <p style={{ color: '#dc2626', fontSize: '1.125rem', marginBottom: '1rem' }}>{error}</p>
             </div>
           ) : filteredListings.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 justify-center">
+            <ListingsGrid>
               {filteredListings.map((listing) => (
-                <div key={listing.id} className="animate-fade-in">
-                  <ListingCard listing={listing} />
-                </div>
+                <ListingCard key={listing.id} listing={listing} />
               ))}
-            </div>
+            </ListingsGrid>
           ) : (
             <div style={{ textAlign: 'center', padding: '3rem 0', background: '#fff', borderRadius: '0.5rem', border: '1px solid #eee' }}>
               <p style={{ color: '#666', fontSize: '1.125rem', marginBottom: '1rem' }}>No listings match your search.</p>
