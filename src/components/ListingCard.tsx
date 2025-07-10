@@ -2,6 +2,9 @@ import type { Listing } from '../lib/types';
 import styled, { css } from 'styled-components';
 import { getUserProfile } from '../lib/users';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '../utils/supabaseClient';
+import { createPortal } from 'react-dom';
 
 interface ListingCardProps {
 	listing: Listing;
@@ -180,6 +183,41 @@ const PlaceholderText = styled.div`
   text-align: center;
 `;
 
+// Placeholder for ClaimModal (to be implemented)
+function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () => void, listingId: string }) {
+	if (!open) return null;
+	return createPortal(
+		<div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+			<div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, maxWidth: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+				<h2>Claim Listing</h2>
+				<p>Claim form goes here...</p>
+				<button onClick={onClose} style={{ marginTop: 16 }}>Close</button>
+			</div>
+		</div>,
+		document.body
+	);
+}
+
+const ClaimButton = styled.button`
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  padding: 0.5rem 1.2rem;
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  z-index: 3;
+  transition: background 0.18s;
+  &:hover {
+    background: #1d4ed8;
+  }
+`;
+
 export default function ListingCard({
 	listing,
 	onView,
@@ -188,25 +226,58 @@ export default function ListingCard({
 	showActions = false
 }: ListingCardProps) {
 	const isLost = listing.status === 'lost';
-	const [initials, setInitials] = useState<string>('');
+	const [initials, setInitials] = useState<string>('?');
+	const [showClaimModal, setShowClaimModal] = useState(false);
+	const [user, setUser] = useState<any>(null);
+	const router = useRouter();
 
 	useEffect(() => {
 		async function fetchInitials() {
-			const profile = await getUserProfile(listing.user_id);
-			if (profile && profile.name) {
-				const parts = profile.name.trim().split(' ');
-				const initials = parts.length === 1
-					? parts[0][0]
-					: parts[0][0] + parts[parts.length - 1][0];
-				setInitials(initials.toUpperCase());
-			} else if (profile && profile.email) {
-				setInitials(profile.email[0].toUpperCase());
-			} else {
-				setInitials('?');
+			try {
+				const profile = await getUserProfile(listing.user_id);
+				if (profile) {
+					if (profile.name) {
+						const parts = profile.name.trim().split(' ');
+						const initials = parts.length === 1
+							? parts[0][0]
+							: parts[0][0] + parts[parts.length - 1][0];
+						setInitials(initials.toUpperCase());
+					} else if (profile.email) {
+						setInitials(profile.email[0].toUpperCase());
+					} else {
+						setInitials('?');
+					}
+				} else {
+					setInitials('?');
+				}
+			} catch (err) {
+				// fallback: show ? or first letter of user_id if it's an email
+				if (listing.user_id && listing.user_id.includes('@')) {
+					setInitials(listing.user_id[0].toUpperCase());
+				} else {
+					setInitials('?');
+				}
+				// Log error for debugging
+				// eslint-disable-next-line no-console
+				console.error('Failed to fetch profile for initials', err);
 			}
 		}
 		fetchInitials();
 	}, [listing.user_id]);
+
+	useEffect(() => {
+		// Use Supabase client-side auth to get the current user
+		supabase.auth.getSession().then(({ data }) => {
+			setUser(data.session?.user || null);
+		});
+		// Subscribe to auth changes
+		const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+			setUser(session?.user || null);
+		});
+		return () => {
+			listener?.subscription.unsubscribe();
+		};
+	}, []);
 
 	return (
 		<Card $isLost={isLost}>
@@ -236,6 +307,13 @@ export default function ListingCard({
 					<InfoValue>{new Date(listing.date).toLocaleDateString()}</InfoValue>
 				</InfoRow>
 			</Info>
+			{/* Claim button for found listings, only for signed-in users */}
+			{listing.status === 'found' && user && (
+				<ClaimButton onClick={() => setShowClaimModal(true)}>
+					I think this is mine
+				</ClaimButton>
+			)}
+			<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
 			{showActions && (
 				<Actions>
 					{onView && (
