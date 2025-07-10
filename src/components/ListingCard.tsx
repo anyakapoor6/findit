@@ -62,6 +62,7 @@ const Placeholder = styled.div`
   height: 180px;
   margin: 0 auto 2rem auto;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   border-radius: 1rem;
@@ -173,7 +174,7 @@ const ActionButton = styled.button`
   &.delete:hover { background: #fecaca; }
 `;
 const PlaceholderText = styled.div`
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   color: #888;
   font-size: 1rem;
   text-align: center;
@@ -214,12 +215,10 @@ export default function ListingCard({
 					<CardImage src={listing.image_url} alt={listing.title} />
 				</ImageBox>
 			) : (
-				<>
-					<Placeholder title="No image provided">
-						<svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 16h.01M16 12h.01" /></svg>
-					</Placeholder>
+				<Placeholder title="No image provided">
+					<svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 16h.01M16 12h.01" /></svg>
 					<PlaceholderText>No image</PlaceholderText>
-				</>
+				</Placeholder>
 			)}
 			<InitialsBox title="Listing owner initials">{initials}</InitialsBox>
 			<CardHeader>
