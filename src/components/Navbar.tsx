@@ -100,9 +100,6 @@ export default function Navbar() {
 					<Link href="/create-listing">
 						<NavA $variant="primary">Create Listing</NavA>
 					</Link>
-					<Link href="/auth">
-						<NavA>Sign In</NavA>
-					</Link>
 					<Spacer />
 					<Link href="/profile">
 						<NavA>Profile</NavA>
