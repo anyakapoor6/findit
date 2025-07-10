@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../utils/supabaseClient';
 import { createPortal } from 'react-dom';
+import { uploadListingImage } from '../lib/storage';
 
 interface ListingCardProps {
 	listing: Listing;
@@ -185,13 +186,140 @@ const PlaceholderText = styled.div`
 
 // Placeholder for ClaimModal (to be implemented)
 function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () => void, listingId: string }) {
+	const [description, setDescription] = useState('');
+	const [whereLost, setWhereLost] = useState('');
+	const [contents, setContents] = useState('');
+	const [file, setFile] = useState<File | null>(null);
+	const [imagePreview, setImagePreview] = useState('');
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState('');
+	const [success, setSuccess] = useState(false);
+
+	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			setFile(file);
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				setImagePreview(e.target?.result as string);
+			};
+			reader.readAsDataURL(file);
+		}
+	};
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setLoading(true);
+		setError('');
+		try {
+			if (!description.trim() || !whereLost.trim()) {
+				throw new Error('Please fill in all required fields.');
+			}
+			// Get current user
+			const { data: { user } } = await supabase.auth.getUser();
+			if (!user) throw new Error('You must be signed in to submit a claim.');
+			let proof_image_url = '';
+			if (file) {
+				proof_image_url = await uploadListingImage(file, user.id);
+			}
+			// Insert claim
+			const { data: claim, error: claimError } = await supabase
+				.from('claims')
+				.insert({
+					listing_id: listingId,
+					claimant_id: user.id,
+					description,
+					where_lost: whereLost,
+					contents,
+					proof_image_url,
+					status: 'pending',
+				})
+				.select()
+				.single();
+			if (claimError) throw claimError;
+			// Get listing to find owner
+			const { data: listing } = await supabase
+				.from('listings')
+				.select('user_id')
+				.eq('id', listingId)
+				.single();
+			// Insert notification for owner
+			if (listing && listing.user_id) {
+				await supabase.from('notifications').insert({
+					user_id: listing.user_id,
+					type: 'claim_submitted',
+					message: 'A new claim was submitted for your found item.',
+					listing_id: listingId,
+					claim_id: claim.id,
+				});
+			}
+			setSuccess(true);
+			setTimeout(() => {
+				setSuccess(false);
+				onClose();
+			}, 1500);
+		} catch (err: any) {
+			setError(err.message || 'Failed to submit claim.');
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	if (!open) return null;
 	return createPortal(
 		<div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-			<div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, maxWidth: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
-				<h2>Claim Listing</h2>
-				<p>Claim form goes here...</p>
-				<button onClick={onClose} style={{ marginTop: 16 }}>Close</button>
+			<div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, maxWidth: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', color: '#111' }}>
+				<h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: 16, color: '#111' }}>Claim Listing</h2>
+				{success ? (
+					<div style={{ color: '#059669', fontWeight: 600, textAlign: 'center', margin: '2rem 0' }}>Claim submitted!</div>
+				) : (
+					<form onSubmit={handleSubmit}>
+						<div style={{ marginBottom: 12 }}>
+							<label style={{ fontWeight: 600, color: '#111' }}>Describe unique features or marks *</label>
+							<textarea
+								value={description}
+								onChange={e => setDescription(e.target.value)}
+								required
+								rows={3}
+								style={{ width: '100%', border: '1px solid #bbb', borderRadius: 8, padding: 8, marginTop: 4, color: '#111' }}
+							/>
+						</div>
+						<div style={{ marginBottom: 12 }}>
+							<label style={{ fontWeight: 600, color: '#111' }}>Where did you lose it? *</label>
+							<input
+								value={whereLost}
+								onChange={e => setWhereLost(e.target.value)}
+								required
+								style={{ width: '100%', border: '1px solid #bbb', borderRadius: 8, padding: 8, marginTop: 4, color: '#111' }}
+							/>
+						</div>
+						<div style={{ marginBottom: 12 }}>
+							<label style={{ fontWeight: 600, color: '#111' }}>What is inside? (optional)</label>
+							<input
+								value={contents}
+								onChange={e => setContents(e.target.value)}
+								style={{ width: '100%', border: '1px solid #bbb', borderRadius: 8, padding: 8, marginTop: 4, color: '#111' }}
+							/>
+						</div>
+						<div style={{ marginBottom: 12 }}>
+							<label style={{ fontWeight: 600, color: '#111' }}>Proof of ownership (optional image)</label>
+							<div style={{ color: '#b91c1c', fontWeight: 600, fontSize: '0.98rem', margin: '6px 0 8px 0' }}>
+								Highly recommended: Upload a photo or document as proof of ownership. Claims without proof are more likely to be rejected by the item finder.
+							</div>
+							<input type="file" accept="image/*" onChange={handleFileChange} />
+							{imagePreview && <img src={imagePreview} alt="Preview" style={{ maxWidth: 120, marginTop: 8, borderRadius: 8 }} />}
+						</div>
+						{error && <div style={{ color: '#dc2626', fontWeight: 600, marginBottom: 8 }}>{error}</div>}
+						<div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+							<button type="submit" disabled={loading} style={{ flex: 1, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '0.7rem 0', fontWeight: 700, fontSize: '1.08rem', cursor: loading ? 'not-allowed' : 'pointer' }}>
+								{loading ? 'Submitting...' : 'Submit Claim'}
+							</button>
+							<button type="button" onClick={onClose} style={{ flex: 1, background: '#f1f5f9', color: '#111', border: '1px solid #bbb', borderRadius: 8, padding: '0.7rem 0', fontWeight: 600, fontSize: '1.08rem', cursor: 'pointer' }}>
+								Cancel
+							</button>
+						</div>
+					</form>
+				)}
 			</div>
 		</div>,
 		document.body
