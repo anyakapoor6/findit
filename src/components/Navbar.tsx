@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import styled from 'styled-components';
+import { useRouter } from 'next/navigation';
 
 const Nav = styled.nav`
   position: sticky;
@@ -28,7 +29,7 @@ const NavContainer = styled.div`
   }
 `
 
-const Logo = styled.a`
+const Logo = styled.span`
   font-size: 2.25rem;
   font-weight: 800;
   color: #1d4ed8;
@@ -54,7 +55,7 @@ const Spacer = styled.div`
   flex: 1;
 `;
 
-const NavA = styled.a<{ $variant?: 'default' | 'primary' }>`
+const NavLink = styled(Link) <{ $variant?: 'default' | 'primary' }>`
   padding: 0.75rem 1.1rem;
   border-radius: 0.5rem;
   font-weight: 500;
@@ -87,6 +88,7 @@ const NavA = styled.a<{ $variant?: 'default' | 'primary' }>`
 `
 
 export default function Navbar() {
+	const router = useRouter();
 	return (
 		<Nav>
 			<NavContainer>
@@ -94,16 +96,10 @@ export default function Navbar() {
 					<Logo>FindIt</Logo>
 				</Link>
 				<NavLinks>
-					<Link href="/">
-						<NavA>Home</NavA>
-					</Link>
-					<Link href="/create-listing">
-						<NavA $variant="primary">Create Listing</NavA>
-					</Link>
+					<NavLink href="/" $variant="default">Home</NavLink>
+					<NavLink href="/create-listing" $variant="primary">Create Listing</NavLink>
 					<Spacer />
-					<Link href="/profile">
-						<NavA>Profile</NavA>
-					</Link>
+					<NavLink href="/profile" $variant="default">Profile</NavLink>
 				</NavLinks>
 			</NavContainer>
 		</Nav>

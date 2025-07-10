@@ -4,10 +4,10 @@ import { useRouter } from 'next/navigation';
 import { addListing } from '../../lib/listings';
 import { getCurrentUser } from '../../lib/auth';
 import { uploadListingImage } from '../../lib/storage';
-import type { CreateListingData } from '../../lib/types';
+import type { CreateListingData, User } from '../../lib/types';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import styled from 'styled-components';
-import Link from 'next/link';
+// Removed unused Link import
 import SignInModal from '../../components/SignInModal';
 
 const PageContainer = styled.div`
@@ -146,19 +146,7 @@ const RemoveButton = styled.button`
   cursor: pointer;
   &:hover { background: #b91c1c; }
 `;
-const NavLinks = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin-top: 2.5rem;
-`;
-const PageLink = styled(Link)`
-  color: #2563eb;
-  font-size: 1.15rem;
-  font-weight: 600;
-  text-decoration: underline;
-  &:hover { color: #1d4ed8; }
-`;
+// Removed unused styled components
 
 export default function CreateListingPage() {
 	const router = useRouter();
@@ -174,7 +162,7 @@ export default function CreateListingPage() {
 	const [imagePreview, setImagePreview] = useState<string>('');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
-	const [user, setUser] = useState<any>(null);
+	const [user, setUser] = useState<User | null>(null);
 	const [showSignIn, setShowSignIn] = useState(false);
 
 	useEffect(() => {
@@ -263,8 +251,9 @@ export default function CreateListingPage() {
 
 			await addListing(listingData);
 			router.push('/');
-		} catch (err: any) {
-			setError(err.message || 'Failed to create listing');
+		} catch (err: unknown) {
+			const errorMessage = err instanceof Error ? err.message : 'Failed to create listing';
+			setError(errorMessage);
 		} finally {
 			setLoading(false);
 		}

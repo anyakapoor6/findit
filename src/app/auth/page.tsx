@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, signUp } from '../../lib/auth';
 import styled from 'styled-components';
@@ -70,7 +70,7 @@ const Message = styled.p<{ error?: boolean }>`
   font-size: 1.1rem;
 `;
 
-export default function AuthPage() {
+function AuthForm() {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [loading, setLoading] = useState(false);
@@ -127,5 +127,13 @@ export default function AuthPage() {
 			</SwitchButton>
 			{message && <Message error={!!message && message.toLowerCase().includes('error')}>{message}</Message>}
 		</AuthContainer>
+	);
+}
+
+export default function AuthPage() {
+	return (
+		<Suspense fallback={<div>Loading...</div>}>
+			<AuthForm />
+		</Suspense>
 	);
 } 

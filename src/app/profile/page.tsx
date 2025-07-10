@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import { getCurrentUser, signOut } from '../../lib/auth';
 import { getUserProfile, updateUserProfile } from '../../lib/users';
 import { fetchUserListings } from '../../lib/listings';
-import { Profile, Listing } from '../../lib/types';
+import { Profile, Listing, User } from '../../lib/types';
 import ListingCard from '../../components/ListingCard';
 import SignInModal from '../../components/SignInModal';
 
@@ -39,11 +39,7 @@ const SectionTitle = styled.h2`
   margin-bottom: 1rem;
 `;
 
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
+// Removed unused Form component
 
 const Input = styled.input`
   padding: 0.75rem;
@@ -138,7 +134,7 @@ const CreateListingButton = styled(Button)`
 `;
 
 export default function ProfilePage() {
-	const [user, setUser] = useState<any>(null);
+	const [user, setUser] = useState<User | null>(null);
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const [userListings, setUserListings] = useState<Listing[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -170,7 +166,7 @@ export default function ProfilePage() {
 			try {
 				const listings = await fetchUserListings(currentUser.id);
 				setUserListings(listings);
-			} catch (error) {
+			} catch (error: unknown) {
 				console.error('Error fetching user listings:', error);
 			}
 
@@ -198,7 +194,7 @@ export default function ProfilePage() {
 			} else {
 				setMessage('Failed to set name. Please try again.');
 			}
-		} catch (error) {
+		} catch {
 			setMessage('An error occurred while setting your name.');
 		}
 		setLoading(false);
@@ -282,7 +278,7 @@ export default function ProfilePage() {
 				<SectionTitle>Your Listings ({userListings.length})</SectionTitle>
 				{userListings.length === 0 ? (
 					<EmptyState>
-						<p>You haven't created any listings yet.</p>
+						<p>You haven&apos;t created any listings yet.</p>
 						<CreateListingButton onClick={handleCreateListing}>
 							Create Your First Listing
 						</CreateListingButton>

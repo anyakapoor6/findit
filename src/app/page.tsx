@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import ListingCard from '../components/ListingCard';
 import { fetchListings } from '../lib/listings';
-import type { Listing } from '../lib/types';
+import type { Listing, User } from '../lib/types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import styled from 'styled-components';
 import SignInModal from '../components/SignInModal';
@@ -103,7 +103,7 @@ export default function Home() {
   const [location, setLocation] = useState('');
   const [showSignIn, setShowSignIn] = useState(false);
   const [userChecked, setUserChecked] = useState(false);
-  const userRef = useRef<any>(null);
+  const userRef = useRef<User | null>(null);
 
   useEffect(() => {
     const loadListings = async () => {
@@ -112,7 +112,7 @@ export default function Home() {
       try {
         const data = await fetchListings();
         setListings(data);
-      } catch (err: any) {
+      } catch {
         setError('Failed to load listings.');
       } finally {
         setLoading(false);

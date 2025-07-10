@@ -6,7 +6,7 @@ export async function uploadListingImage(file: File, userId: string): Promise<st
 	const fileExtension = file.name.split('.').pop();
 	const fileName = `${userId}_${timestamp}.${fileExtension}`;
 
-	const { data, error } = await supabase.storage
+	const { error } = await supabase.storage
 		.from('listing-images')
 		.upload(fileName, file, {
 			cacheControl: '3600',
