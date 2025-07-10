@@ -46,11 +46,13 @@ const NavLinks = styled.div`
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
-
   @media (min-width: 640px) {
     gap: 1rem;
   }
-`
+`;
+const Spacer = styled.div`
+  flex: 1;
+`;
 
 const NavA = styled.a<{ $variant?: 'default' | 'primary' }>`
   padding: 0.75rem 1.1rem;
@@ -100,6 +102,10 @@ export default function Navbar() {
 					</Link>
 					<Link href="/auth">
 						<NavA>Sign In</NavA>
+					</Link>
+					<Spacer />
+					<Link href="/profile">
+						<NavA>Profile</NavA>
 					</Link>
 				</NavLinks>
 			</NavContainer>
