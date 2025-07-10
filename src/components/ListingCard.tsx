@@ -1,5 +1,7 @@
 import type { Listing } from '../lib/types';
 import styled, { css } from 'styled-components';
+import { getUserProfile } from '../lib/users';
+import { useEffect, useState } from 'react';
 
 interface ListingCardProps {
 	listing: Listing;
@@ -11,6 +13,25 @@ interface ListingCardProps {
 
 const CARD_WIDTH = '320px';
 const CARD_HEIGHT = '470px';
+
+const InitialsBox = styled.div`
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  background: #2563eb;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  z-index: 2;
+`;
 
 const Card = styled.div<{ $isLost: boolean }>`
   border-radius: 1.25rem;
@@ -29,10 +50,25 @@ const Card = styled.div<{ $isLost: boolean }>`
   background: ${({ $isLost }) => ($isLost ? '#fef2f2' : '#f0fdf4')};
   border-color: ${({ $isLost }) => ($isLost ? '#fecaca' : '#bbf7d0')};
   transition: box-shadow 0.2s, transform 0.2s;
+  position: relative;
   &:hover {
     box-shadow: 0 8px 32px rgba(0,0,0,0.13);
     transform: scale(1.04);
   }
+`;
+
+const Placeholder = styled.div`
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 2rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1.5px dashed #d1d5db;
+  background: #f3f4f6;
+  color: #9ca3af;
+  font-size: 2.5rem;
 `;
 const ImageBox = styled.div`
   width: 180px;
@@ -136,6 +172,12 @@ const ActionButton = styled.button`
   &.delete { background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; }
   &.delete:hover { background: #fecaca; }
 `;
+const PlaceholderText = styled.div`
+  margin-top: 0.5rem;
+  color: #888;
+  font-size: 1rem;
+  text-align: center;
+`;
 
 export default function ListingCard({
 	listing,
@@ -145,13 +187,41 @@ export default function ListingCard({
 	showActions = false
 }: ListingCardProps) {
 	const isLost = listing.status === 'lost';
+	const [initials, setInitials] = useState<string>('');
+
+	useEffect(() => {
+		async function fetchInitials() {
+			const profile = await getUserProfile(listing.user_id);
+			if (profile && profile.name) {
+				const parts = profile.name.trim().split(' ');
+				const initials = parts.length === 1
+					? parts[0][0]
+					: parts[0][0] + parts[parts.length - 1][0];
+				setInitials(initials.toUpperCase());
+			} else if (profile && profile.email) {
+				setInitials(profile.email[0].toUpperCase());
+			} else {
+				setInitials('?');
+			}
+		}
+		fetchInitials();
+	}, [listing.user_id]);
+
 	return (
 		<Card $isLost={isLost}>
-			{listing.image_url && (
+			{listing.image_url ? (
 				<ImageBox>
 					<CardImage src={listing.image_url} alt={listing.title} />
 				</ImageBox>
+			) : (
+				<>
+					<Placeholder title="No image provided">
+						<svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 16h.01M16 12h.01" /></svg>
+					</Placeholder>
+					<PlaceholderText>No image</PlaceholderText>
+				</>
 			)}
+			<InitialsBox title="Listing owner initials">{initials}</InitialsBox>
 			<CardHeader>
 				<Title title={listing.title}>{listing.title}</Title>
 				<Status $isLost={isLost}>{listing.status}</Status>

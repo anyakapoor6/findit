@@ -238,6 +238,9 @@ export default function CreateListingPage() {
 			if (!formData.title.trim() || !formData.description.trim() || !formData.location.trim()) {
 				throw new Error('Please fill in all required fields');
 			}
+			if (formData.status === 'found' && !selectedFile) {
+				throw new Error('A photo is required for found items.');
+			}
 
 			let imageUrl = '';
 			if (selectedFile && user) {
@@ -334,7 +337,9 @@ export default function CreateListingPage() {
 					</div>
 					{/* Image Upload */}
 					<div>
-						<Label>Item Image (Optional)</Label>
+						<Label>
+							Item Image{formData.status === 'found' ? ' (Required for Found Items)' : ' (Optional)'}
+						</Label>
 						{!imagePreview ? (
 							<UploadBox>
 								<input
@@ -348,6 +353,16 @@ export default function CreateListingPage() {
 									Click to upload or drag and drop
 								</UploadLabel>
 								<div style={{ color: '#666', fontSize: '0.95rem' }}>PNG, JPG, GIF up to 5MB</div>
+								{formData.status === 'found' && (
+									<div style={{ color: '#dc2626', fontSize: '0.95rem', marginTop: '0.5rem' }}>
+										* Required for found items
+									</div>
+								)}
+								{formData.status === 'lost' && (
+									<div style={{ color: '#2563eb', fontSize: '0.95rem', marginTop: '0.5rem' }}>
+										Adding a picture helps others identify your lost item. If you don't have a photo, consider uploading a similar image from Google or the product website.
+									</div>
+								)}
 							</UploadBox>
 						) : (
 							<UploadBox>
