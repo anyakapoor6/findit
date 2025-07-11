@@ -435,8 +435,8 @@ export default function ListingCard({
 					<InfoValue>{new Date(listing.date).toLocaleDateString()}</InfoValue>
 				</InfoRow>
 			</Info>
-			{/* Claim button for found listings, only for signed-in users */}
-			{listing.status === 'found' && user && (
+			{/* Claim button for found listings, only for signed-in users who are not the owner */}
+			{listing.status === 'found' && user && user.id !== listing.user_id && (
 				<ClaimButton onClick={() => setShowClaimModal(true)}>
 					I think this is mine
 				</ClaimButton>
