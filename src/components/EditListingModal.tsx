@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { updateListing } from '../lib/listings';
 import type { Listing, CreateListingData } from '../lib/types';
 import { uploadListingImage } from '../lib/storage';
+import { deleteListing } from '../lib/listings';
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -159,14 +160,30 @@ const RemoveButton = styled.button`
   cursor: pointer;
   &:hover { background: #b91c1c; }
 `;
+const DeleteButton = styled.button`
+  width: 100%;
+  background: #dc2626;
+  color: #fff;
+  padding: 0.9rem 0;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border: none;
+  margin-top: 0.5rem;
+  transition: background 0.2s;
+  &:hover {
+    background: #b91c1c;
+  }
+`;
 
 interface EditListingModalProps {
 	listing: Listing;
 	onClose: () => void;
 	onSave: (updated: Listing) => void;
+	onDelete?: (deletedId: string) => void;
 }
 
-export default function EditListingModal({ listing, onClose, onSave }: EditListingModalProps) {
+export default function EditListingModal({ listing, onClose, onSave, onDelete }: EditListingModalProps) {
 	const [formData, setFormData] = useState<CreateListingData>({
 		title: listing.title,
 		description: listing.description,
@@ -179,6 +196,7 @@ export default function EditListingModal({ listing, onClose, onSave }: EditListi
 	const [imagePreview, setImagePreview] = useState<string>(listing.image_url || '');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
+	const [deleteLoading, setDeleteLoading] = useState(false);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
 		const { name, value } = e.target;
@@ -224,6 +242,20 @@ export default function EditListingModal({ listing, onClose, onSave }: EditListi
 		}
 	};
 
+	const handleDelete = async () => {
+		if (!window.confirm('Are you sure you want to delete this listing? This action cannot be undone.')) return;
+		setDeleteLoading(true);
+		try {
+			await deleteListing(listing.id);
+			if (onDelete) onDelete(listing.id);
+			onClose();
+		} catch (err) {
+			setError('Failed to delete listing.');
+		} finally {
+			setDeleteLoading(false);
+		}
+	};
+
 	return (
 		<ModalOverlay>
 			<ModalContent>
@@ -257,6 +289,9 @@ export default function EditListingModal({ listing, onClose, onSave }: EditListi
 					{error && <div style={{ color: '#dc2626', fontWeight: 600, marginBottom: 8 }}>{error}</div>}
 					<SubmitButton type="submit" disabled={loading || (formData.status === 'found' && !imagePreview)}>{loading ? 'Saving...' : 'Save Changes'}</SubmitButton>
 					<CancelButton type="button" onClick={onClose}>Cancel</CancelButton>
+					<DeleteButton type="button" onClick={handleDelete} disabled={deleteLoading}>
+						{deleteLoading ? 'Deleting...' : 'Delete Listing'}
+					</DeleteButton>
 				</form>
 			</ModalContent>
 		</ModalOverlay>

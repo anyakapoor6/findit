@@ -119,6 +119,15 @@ export default function Home() {
       }
     };
     loadListings();
+
+    // Listen for listing-deleted event
+    const handleListingDeleted = () => {
+      loadListings();
+    };
+    window.addEventListener('listing-deleted', handleListingDeleted);
+    return () => {
+      window.removeEventListener('listing-deleted', handleListingDeleted);
+    };
   }, []);
 
   useEffect(() => {

@@ -199,9 +199,23 @@ export default function ProfilePage() {
 	const [editingEmail, setEditingEmail] = useState(false);
 	const [email, setEmail] = useState('');
 	const [editingListing, setEditingListing] = useState<Listing | null>(null);
+	const [mounted, setMounted] = useState(false);
+	useEffect(() => { setMounted(true); }, []);
 
 	const handleEditListing = (listing: Listing) => {
 		setEditingListing(listing);
+	};
+
+	const handleListingDeleted = async (deletedId: string) => {
+		setEditingListing(null);
+		// Refetch listings from backend to ensure sync
+		if (user) {
+			const listings = await fetchUserListings(user.id);
+			setUserListings(listings);
+		} else {
+			setUserListings(userListings.filter(listing => listing.id !== deletedId));
+		}
+		window.dispatchEvent(new CustomEvent('listing-deleted', { detail: { id: deletedId } }));
 	};
 
 	useEffect(() => {
@@ -399,7 +413,7 @@ export default function ProfilePage() {
 		setProfile(prev => prev ? { ...prev, listings: updatedUserListings } : null);
 	};
 
-	if (loading) {
+	if (loading && mounted) {
 		return (
 			<Container>
 				<Title>Loading...</Title>
@@ -621,7 +635,12 @@ export default function ProfilePage() {
 				</ClaimsSection>
 			)}
 			{editingListing && (
-				<EditListingModal listing={editingListing} onClose={() => setEditingListing(null)} onSave={handleListingUpdated} />
+				<EditListingModal
+					listing={editingListing}
+					onClose={() => setEditingListing(null)}
+					onSave={handleListingUpdated}
+					onDelete={handleListingDeleted}
+				/>
 			)}
 		</Container>
 	);
