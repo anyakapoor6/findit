@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../utils/supabaseClient';
 import { createPortal } from 'react-dom';
 import { uploadListingImage } from '../lib/storage';
+import { FaPencilAlt } from 'react-icons/fa';
 
 interface ListingCardProps {
 	listing: Listing;
@@ -15,7 +16,7 @@ interface ListingCardProps {
 	showActions?: boolean;
 }
 
-const CARD_WIDTH = '320px';
+const CARD_WIDTH = '270px';
 const CARD_HEIGHT = '470px';
 
 const InitialsBox = styled.div`
@@ -346,6 +347,29 @@ const ClaimButton = styled.button`
   }
 `;
 
+const EditIconButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 50%;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  transition: background 0.18s;
+  &:hover {
+    background: #e0e7ef;
+  }
+`;
+
 export default function ListingCard({
 	listing,
 	onView,
@@ -440,6 +464,11 @@ export default function ListingCard({
 				<ClaimButton onClick={() => setShowClaimModal(true)}>
 					I think this is mine
 				</ClaimButton>
+			)}
+			{onEdit && (
+				<EditIconButton title="Edit Listing" onClick={() => onEdit(listing)}>
+					<FaPencilAlt />
+				</EditIconButton>
 			)}
 			<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
 			{showActions && (

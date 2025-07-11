@@ -10,6 +10,7 @@ import { Profile, Listing, User } from '../../lib/types';
 import ListingCard from '../../components/ListingCard';
 import SignInModal from '../../components/SignInModal';
 import { supabase } from '../../utils/supabaseClient';
+import EditListingModal from '../../components/EditListingModal';
 
 const Container = styled.div`
   max-width: 800px;
@@ -197,6 +198,11 @@ export default function ProfilePage() {
 	const [editingName, setEditingName] = useState(false);
 	const [editingEmail, setEditingEmail] = useState(false);
 	const [email, setEmail] = useState('');
+	const [editingListing, setEditingListing] = useState<Listing | null>(null);
+
+	const handleEditListing = (listing: Listing) => {
+		setEditingListing(listing);
+	};
 
 	useEffect(() => {
 		const checkAuth = async () => {
@@ -383,6 +389,16 @@ export default function ProfilePage() {
 		setMyClaims((prev) => prev.map(c => c.id === claim.id ? { ...c, status: action } : c));
 	};
 
+	const handleListingUpdated = async (updatedListing: Listing) => {
+		setEditingListing(null);
+		const updatedUserListings = userListings.map(listing =>
+			listing.id === updatedListing.id ? updatedListing : listing
+		);
+		setUserListings(updatedUserListings);
+		// Optionally, update the profile object if needed
+		setProfile(prev => prev ? { ...prev, listings: updatedUserListings } : null);
+	};
+
 	if (loading) {
 		return (
 			<Container>
@@ -554,7 +570,7 @@ export default function ProfilePage() {
 								<ListingsGridWrapper>
 									<ListingsGrid>
 										{userListings.map(listing => (
-											<ListingCard key={listing.id} listing={listing} />
+											<ListingCard key={listing.id} listing={listing} onEdit={() => handleEditListing(listing)} showActions={false} />
 										))}
 									</ListingsGrid>
 								</ListingsGridWrapper>
@@ -603,6 +619,9 @@ export default function ProfilePage() {
 						</ClaimCard>
 					))}
 				</ClaimsSection>
+			)}
+			{editingListing && (
+				<EditListingModal listing={editingListing} onClose={() => setEditingListing(null)} onSave={handleListingUpdated} />
 			)}
 		</Container>
 	);
