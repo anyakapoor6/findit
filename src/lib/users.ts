@@ -21,14 +21,15 @@ export async function getUserProfile(userId: string): Promise<Profile | null> {
 	}
 }
 
-export async function createUserProfile(userId: string, email: string, name?: string): Promise<Profile | null> {
+export async function createUserProfile(userId: string, email: string, name?: string, phone?: string): Promise<Profile | null> {
 	try {
 		const { data, error } = await supabase
 			.from('users')
 			.insert({
 				id: userId,
 				email,
-				name
+				name,
+				phone_number: phone
 			})
 			.select()
 			.single();
@@ -45,7 +46,7 @@ export async function createUserProfile(userId: string, email: string, name?: st
 	}
 }
 
-export async function updateUserProfile(userId: string, updates: Partial<Profile>): Promise<Profile | null> {
+export async function updateUserProfile(userId: string, updates: Partial<Profile> & { phone_number?: string }): Promise<Profile | null> {
 	try {
 		console.log('Updating profile for user:', userId, 'with updates:', updates);
 
@@ -72,17 +73,17 @@ export async function updateUserProfile(userId: string, updates: Partial<Profile
 	}
 }
 
-export async function syncUserProfile(userId: string, email: string, name?: string): Promise<Profile | null> {
+export async function syncUserProfile(userId: string, email: string, name?: string, phone?: string): Promise<Profile | null> {
 	try {
 		// First try to get existing profile
 		let profile = await getUserProfile(userId);
 
 		if (!profile) {
 			// Create new profile if it doesn't exist
-			profile = await createUserProfile(userId, email, name);
+			profile = await createUserProfile(userId, email, name, phone);
 		} else {
 			// Update existing profile with latest data
-			profile = await updateUserProfile(userId, { email, name });
+			profile = await updateUserProfile(userId, { email, name, phone_number: phone });
 		}
 
 		return profile;

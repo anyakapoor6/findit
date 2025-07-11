@@ -3,13 +3,14 @@ import type { User, AuthState } from './types';
 import { syncUserProfile } from './users';
 
 // Sign up with email and password
-export async function signUp(email: string, password: string, name?: string): Promise<{ user: User | null; error: string | null }> {
+export async function signUp(email: string, password: string, name?: string, phone?: string): Promise<{ user: User | null; error: string | null }> {
 	const { data, error } = await supabase.auth.signUp({
 		email,
 		password,
 		options: {
 			data: {
-				name: name || ''
+				name: name || '',
+				phone_number: phone || ''
 			}
 		}
 	});
@@ -21,7 +22,7 @@ export async function signUp(email: string, password: string, name?: string): Pr
 	// Sync user profile to users table
 	if (data.user) {
 		console.log('Creating user profile for new user:', data.user.id);
-		await syncUserProfile(data.user.id, data.user.email!, name);
+		await syncUserProfile(data.user.id, data.user.email!, name, phone);
 	}
 
 	return {

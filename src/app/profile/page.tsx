@@ -192,6 +192,11 @@ export default function ProfilePage() {
 	const [activeTab, setActiveTab] = useState<'profile' | 'claims'>('profile');
 	const [myClaims, setMyClaims] = useState<any[]>([]);
 	const [claimsLoading, setClaimsLoading] = useState(false);
+	const [phone, setPhone] = useState('');
+	const [editingPhone, setEditingPhone] = useState(false);
+	const [editingName, setEditingName] = useState(false);
+	const [editingEmail, setEditingEmail] = useState(false);
+	const [email, setEmail] = useState('');
 
 	useEffect(() => {
 		const checkAuth = async () => {
@@ -208,6 +213,8 @@ export default function ProfilePage() {
 			setProfile(userProfile);
 			if (userProfile) {
 				setName(userProfile.name || '');
+				setPhone(userProfile.phone_number || '');
+				setEmail(user?.email || '');
 				if (!userProfile.name) setShowNamePrompt(true);
 			}
 
@@ -272,12 +279,74 @@ export default function ProfilePage() {
 			if (updatedProfile) {
 				setProfile(updatedProfile);
 				setShowNamePrompt(false);
+				setEditingName(false);
 				setMessage('');
 			} else {
 				setMessage('Failed to set name. Please try again.');
 			}
 		} catch {
 			setMessage('An error occurred while setting your name.');
+		}
+		setLoading(false);
+	};
+
+	const handleUpdateName = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!user) return;
+		if (!name.trim()) {
+			setMessage('Name is required.');
+			return;
+		}
+		setLoading(true);
+		setMessage('');
+		try {
+			const updatedProfile = await updateUserProfile(user.id, { name: name.trim() });
+			if (updatedProfile) {
+				setProfile(updatedProfile);
+				setEditingName(false);
+				setMessage('');
+				// Update user state to reflect the new name
+				setUser(prevUser => prevUser ? { ...prevUser } : null);
+			} else {
+				setMessage('Failed to update name. Please try again.');
+			}
+		} catch {
+			setMessage('An error occurred while updating your name.');
+		}
+		setLoading(false);
+	};
+
+	const handleUpdateEmail = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!user) return;
+		if (!email.trim()) {
+			setMessage('Email is required.');
+			return;
+		}
+		setLoading(true);
+		setMessage('');
+		try {
+			// Update email in Supabase auth
+			const { error: authError } = await supabase.auth.updateUser({ email: email.trim() });
+			if (authError) {
+				setMessage('Failed to update email. Please try again.');
+				setLoading(false);
+				return;
+			}
+
+			// Update email in users table
+			const updatedProfile = await updateUserProfile(user.id, { email: email.trim() });
+			if (updatedProfile) {
+				setProfile(updatedProfile);
+				// Update the user state to reflect the new email
+				setUser(prevUser => prevUser ? { ...prevUser, email: email.trim() } : null);
+				setEditingEmail(false);
+				setMessage('Email updated successfully! Please check your email to confirm the change.');
+			} else {
+				setMessage('Failed to update email in profile. Please try again.');
+			}
+		} catch {
+			setMessage('An error occurred while updating your email.');
 		}
 		setLoading(false);
 	};
@@ -365,14 +434,102 @@ export default function ProfilePage() {
 										{loading ? 'Saving...' : 'Save'}
 									</Button>
 								</form>
+							) : editingName ? (
+								<form onSubmit={handleUpdateName} style={{ display: 'flex', width: '100%', gap: '1rem', alignItems: 'center' }}>
+									<Input
+										type="text"
+										placeholder="Full Name"
+										value={name}
+										onChange={(e) => setName(e.target.value)}
+										style={{ flex: 1 }}
+										required
+									/>
+									<Button type="submit" disabled={loading} style={{ minWidth: 120 }}>
+										{loading ? 'Saving...' : 'Save'}
+									</Button>
+									<Button type="button" onClick={() => { setEditingName(false); setName(profile?.name || ''); }} style={{ background: '#f1f5f9', color: '#2563eb', minWidth: 80 }}>Cancel</Button>
+								</form>
 							) : (
-								<InfoValue>{profile?.name || 'Not set'}</InfoValue>
+								<div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+									<InfoValue>{profile?.name || <span style={{ color: '#bbb' }}>Not set</span>}</InfoValue>
+									<Button type="button" onClick={() => setEditingName(true)} style={{ background: '#f1f5f9', color: '#2563eb', minWidth: 80, fontWeight: 500, fontSize: '0.98rem', padding: '0.4rem 1rem' }}>
+										{profile?.name ? 'Edit' : 'Add'}
+									</Button>
+								</div>
 							)}
 						</InfoRow>
 						<InfoRow>
 							<InfoLabel>Email:</InfoLabel>
-							<InfoValue>{user.email}</InfoValue>
+							{editingEmail ? (
+								<form onSubmit={handleUpdateEmail} style={{ display: 'flex', width: '100%', gap: '1rem', alignItems: 'center' }}>
+									<Input
+										type="email"
+										placeholder="Email Address"
+										value={email}
+										onChange={(e) => setEmail(e.target.value)}
+										style={{ flex: 1 }}
+										required
+									/>
+									<Button type="submit" disabled={loading} style={{ minWidth: 120 }}>
+										{loading ? 'Saving...' : 'Save'}
+									</Button>
+									<Button type="button" onClick={() => { setEditingEmail(false); setEmail(user?.email || ''); }} style={{ background: '#f1f5f9', color: '#2563eb', minWidth: 80 }}>Cancel</Button>
+								</form>
+							) : (
+								<div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+									<InfoValue>{user?.email}</InfoValue>
+									<Button type="button" onClick={() => setEditingEmail(true)} style={{ background: '#f1f5f9', color: '#2563eb', minWidth: 80, fontWeight: 500, fontSize: '0.98rem', padding: '0.4rem 1rem' }}>
+										Edit
+									</Button>
+								</div>
+							)}
 						</InfoRow>
+						<InfoRow>
+							<InfoLabel>Phone:</InfoLabel>
+							{editingPhone ? (
+								<form
+									onSubmit={async e => {
+										e.preventDefault();
+										setLoading(true);
+										setMessage('');
+										const updated = await updateUserProfile(user.id, { phone_number: phone });
+										if (updated) {
+											setProfile(updated);
+											setEditingPhone(false);
+											setMessage('');
+										} else {
+											setMessage('Failed to update phone number.');
+										}
+										setLoading(false);
+									}}
+									style={{ display: 'flex', width: '100%', gap: '1rem', alignItems: 'center' }}
+								>
+									<Input
+										type="tel"
+										placeholder="Phone Number"
+										value={phone}
+										onChange={e => setPhone(e.target.value)}
+										pattern="[0-9+\-() ]*"
+										maxLength={20}
+										style={{ flex: 1 }}
+									/>
+									<Button type="submit" disabled={loading} style={{ minWidth: 120 }}>
+										{loading ? 'Saving...' : 'Save'}
+									</Button>
+									<Button type="button" onClick={() => { setEditingPhone(false); setPhone(profile?.phone_number || ''); }} style={{ background: '#f1f5f9', color: '#2563eb', minWidth: 80 }}>Cancel</Button>
+								</form>
+							) : (
+								<div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+									<InfoValue>{profile?.phone_number || <span style={{ color: '#bbb' }}>Not set</span>}</InfoValue>
+									<Button type="button" onClick={() => setEditingPhone(true)} style={{ background: '#f1f5f9', color: '#2563eb', minWidth: 80, fontWeight: 500, fontSize: '0.98rem', padding: '0.4rem 1rem' }}>
+										{profile?.phone_number ? 'Edit' : 'Add'}
+									</Button>
+								</div>
+							)}
+						</InfoRow>
+						<div style={{ color: '#888', fontSize: '0.97rem', marginTop: 4, marginBottom: 8 }}>
+							Phone number is only shown when your claim is accepted.
+						</div>
 						<InfoRow>
 							<InfoLabel>Member Since:</InfoLabel>
 							<InfoValue>{new Date(user.created_at).toLocaleDateString()}</InfoValue>

@@ -33,6 +33,7 @@ export interface Profile {
 	name?: string;
 	created_at: string;
 	updated_at: string;
+	phone_number?: string;
 }
 
 export interface AuthState {

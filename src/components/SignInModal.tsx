@@ -94,6 +94,7 @@ export default function SignInModal({ open, onClose, onSignIn }: { open: boolean
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -110,7 +111,7 @@ export default function SignInModal({ open, onClose, onSignIn }: { open: boolean
       return;
     }
     const result = isSignUp
-      ? await signUp(email, password, name)
+      ? await signUp(email, password, name, phone)
       : await signIn(email, password);
     if (result.error) {
       setMessage(result.error);
@@ -142,6 +143,16 @@ export default function SignInModal({ open, onClose, onSignIn }: { open: boolean
               value={name}
               onChange={e => setName(e.target.value)}
               required
+            />
+          )}
+          {isSignUp && (
+            <StyledInput
+              type="tel"
+              placeholder="Phone Number (optional)"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              pattern="[0-9+\-() ]*"
+              maxLength={20}
             />
           )}
           <StyledInput
