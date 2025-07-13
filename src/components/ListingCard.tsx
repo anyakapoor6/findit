@@ -14,6 +14,7 @@ interface ListingCardProps {
 	onEdit?: (listing: Listing) => void;
 	onDelete?: (listing: Listing) => void;
 	showActions?: boolean;
+	onStatusChange?: () => void;
 }
 
 const CARD_WIDTH = '300px';
@@ -505,7 +506,8 @@ export default function ListingCard({
 	onView,
 	onEdit,
 	onDelete,
-	showActions = false
+	showActions = false,
+	onStatusChange
 }: ListingCardProps) {
 	const isLost = listing.status === 'lost';
 	const isResolved = listing.status === 'resolved';
@@ -569,9 +571,14 @@ export default function ListingCard({
 	const handleResolve = async (e: React.MouseEvent) => {
 		e.stopPropagation();
 		setResolving(true);
-		await supabase.from('listings').update({ status: 'resolved' }).eq('id', listing.id);
+		const { error } = await supabase.from('listings').update({ status: 'resolved' }).eq('id', listing.id);
 		setResolving(false);
-		// Optionally, trigger a refresh or callback
+		if (error) {
+			alert('Failed to mark as resolved: ' + error.message);
+			console.error('Supabase error:', error);
+			return;
+		}
+		if (onStatusChange) onStatusChange();
 	};
 
 	return (

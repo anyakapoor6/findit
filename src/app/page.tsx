@@ -204,6 +204,7 @@ export default function Home() {
 
   // Filtered listings
   const filteredListings = listings.filter(listing => {
+    if (listing.status === 'resolved') return false;
     const matchesKeyword =
       !search ||
       (listing.title && listing.title.toLowerCase().includes(search.toLowerCase())) ||

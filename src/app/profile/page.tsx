@@ -15,9 +15,9 @@ import { useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 const Container = styled.div`
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 1.5rem;
 `;
 
 const Title = styled.h1`
@@ -154,6 +154,14 @@ const TabButton = styled.button`
     border-bottom: 2px solid #2563eb;
   }
 `;
+const TabBar = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 0.5rem;
+`;
 const ClaimsSection = styled.div`
   background: #fff;
   border-radius: 1rem;
@@ -217,14 +225,20 @@ export default function ProfilePage() {
 	const [showSignIn, setShowSignIn] = useState(false);
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const [activeTab, setActiveTab] = useState<'profile' | 'userClaims' | 'claims'>(() => {
+	const tabOptions = [
+		{ key: 'profile', label: 'Profile' },
+		{ key: 'userClaims', label: 'Claims' },
+		{ key: 'claims', label: 'Claims on My Listings' },
+	] as const;
+	type TabKey = typeof tabOptions[number]['key'];
+	const [activeTab, setActiveTab] = useState<TabKey>(() => {
 		const tab = searchParams?.get('tab');
-		if (tab === 'claims' || tab === 'userClaims' || tab === 'profile') return tab;
+		if (tabOptions.some(t => t.key === tab)) return tab as TabKey;
 		return 'profile';
 	});
 	useEffect(() => {
 		const tab = searchParams?.get('tab');
-		if (tab === 'claims' || tab === 'userClaims' || tab === 'profile') setActiveTab(tab);
+		if (tabOptions.some(t => t.key === tab)) setActiveTab(tab as TabKey);
 		// eslint-disable-next-line
 	}, [searchParams]);
 	const [myClaims, setMyClaims] = useState<any[]>([]);
@@ -523,6 +537,13 @@ export default function ProfilePage() {
 		await upsertUserPreferences(prefs.user_id, newPrefs);
 	};
 
+	const handleStatusChange = async () => {
+		if (user) {
+			const listings = await fetchUserListings(user.id);
+			setUserListings(listings);
+		}
+	};
+
 	if (loading && mounted) {
 		return (
 			<Container>
@@ -548,11 +569,17 @@ export default function ProfilePage() {
 	return (
 		<Container>
 			{/* Tabs */}
-			<div style={{ display: 'flex', marginBottom: '2rem' }}>
-				<TabButton className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>Profile</TabButton>
-				<TabButton className={activeTab === 'userClaims' ? 'active' : ''} onClick={() => setActiveTab('userClaims')}>Claims</TabButton>
-				<TabButton className={activeTab === 'claims' ? 'active' : ''} onClick={() => setActiveTab('claims')}>Claims on My Listings</TabButton>
-			</div>
+			<TabBar>
+				{tabOptions.map(tab => (
+					<TabButton
+						key={tab.key}
+						className={activeTab === tab.key ? 'active' : ''}
+						onClick={() => setActiveTab(tab.key)}
+					>
+						{tab.label}
+					</TabButton>
+				))}
+			</TabBar>
 			{/* Profile Tab */}
 			{activeTab === 'profile' && (
 				<>
@@ -695,7 +722,7 @@ export default function ProfilePage() {
 								<ListingsGridWrapper>
 									<ListingsGrid>
 										{userListings.map(listing => (
-											<ListingCard key={listing.id} listing={listing} onEdit={() => handleEditListing(listing)} showActions={false} />
+											<ListingCard key={listing.id} listing={listing} onEdit={() => handleEditListing(listing)} showActions={false} onStatusChange={handleStatusChange} />
 										))}
 									</ListingsGrid>
 								</ListingsGridWrapper>
