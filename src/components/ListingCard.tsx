@@ -38,7 +38,7 @@ const InitialsBox = styled.div`
   z-index: 2;
 `;
 
-const Card = styled.div<{ $isLost: boolean }>`
+const Card = styled.div<{ $isLost: boolean; $isResolved: boolean }>`
   border-radius: 1.25rem;
   box-shadow: 0 4px 16px rgba(0,0,0,0.08);
   border: 2px solid;
@@ -52,8 +52,8 @@ const Card = styled.div<{ $isLost: boolean }>`
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  background: ${({ $isLost }) => ($isLost ? '#fef2f2' : '#f0fdf4')};
-  border-color: ${({ $isLost }) => ($isLost ? '#fecaca' : '#bbf7d0')};
+  background: ${({ $isLost, $isResolved }) => $isResolved ? '#fce7f3' : $isLost ? '#fef2f2' : '#f0fdf4'};
+  border-color: ${({ $isLost, $isResolved }) => $isResolved ? '#fbcfe8' : $isLost ? '#fecaca' : '#bbf7d0'};
   transition: box-shadow 0.2s, transform 0.2s;
   position: relative;
   cursor: pointer;
@@ -119,7 +119,7 @@ const Title = styled.h3`
   text-overflow: ellipsis;
   flex-shrink: 0;
 `;
-const Status = styled.span<{ $isLost: boolean }>`
+const Status = styled.span<{ $isLost: boolean; $isResolved: boolean }>`
   padding: 0.3rem 1rem;
   border-radius: 999px;
   font-size: 0.95rem;
@@ -128,11 +128,15 @@ const Status = styled.span<{ $isLost: boolean }>`
   letter-spacing: 0.04em;
   box-shadow: 0 1px 3px rgba(0,0,0,0.07);
   border: 1.5px solid;
-  ${({ $isLost }) => $isLost ? css`
+  ${({ $isLost, $isResolved }) => $isResolved ? `
+    background: #fbcfe8;
+    color: #be185d;
+    border-color: #f472b6;
+  ` : $isLost ? `
     background: #fecaca;
     color: #b91c1c;
     border-color: #fca5a5;
-  ` : css`
+  ` : `
     background: #bbf7d0;
     color: #166534;
     border-color: #4ade80;
@@ -422,6 +426,30 @@ function formatDateUS(dateStr: string) {
 }
 
 function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClose: () => void, listing: any }) {
+	const [user, setUser] = useState<any>(null);
+	const [resolving, setResolving] = useState(false);
+	useEffect(() => {
+		supabase.auth.getSession().then(({ data }) => {
+			setUser(data.session?.user || null);
+		});
+		const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+			setUser(session?.user || null);
+		});
+		return () => {
+			listener?.subscription.unsubscribe();
+		};
+	}, []);
+
+	const canResolve = user && listing.user_id === user.id && (listing.status === 'lost' || listing.status === 'found');
+
+	const handleResolve = async () => {
+		setResolving(true);
+		await supabase.from('listings').update({ status: 'resolved' }).eq('id', listing.id);
+		setResolving(false);
+		onClose();
+		// Optionally, trigger a refresh or callback
+	};
+
 	if (!open) return null;
 	return (
 		<div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -444,6 +472,29 @@ function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClos
 						</ul>
 					</div>
 				)}
+				{canResolve && (
+					<button
+						onClick={handleResolve}
+						disabled={resolving}
+						style={{
+							marginTop: 20,
+							width: '100%',
+							background: '#f472b6',
+							color: '#fff',
+							fontWeight: 700,
+							fontSize: '1.1rem',
+							border: 'none',
+							borderRadius: 8,
+							padding: '0.9rem 0',
+							cursor: 'pointer',
+							boxShadow: '0 2px 8px rgba(245,114,182,0.10)',
+							transition: 'background 0.18s, box-shadow 0.18s',
+							opacity: resolving ? 0.7 : 1
+						}}
+					>
+						{resolving ? 'Marking as Resolved...' : 'Mark as Resolved'}
+					</button>
+				)}
 			</div>
 		</div>
 	);
@@ -457,10 +508,12 @@ export default function ListingCard({
 	showActions = false
 }: ListingCardProps) {
 	const isLost = listing.status === 'lost';
+	const isResolved = listing.status === 'resolved';
 	const [initials, setInitials] = useState<string>('?');
 	const [showClaimModal, setShowClaimModal] = useState(false);
 	const [user, setUser] = useState<any>(null);
 	const [showDetails, setShowDetails] = useState(false);
+	const [resolving, setResolving] = useState(false);
 	const router = useRouter();
 
 	useEffect(() => {
@@ -511,9 +564,19 @@ export default function ListingCard({
 		};
 	}, []);
 
+	const canResolve = user && listing.user_id === user.id && (listing.status === 'lost' || listing.status === 'found');
+
+	const handleResolve = async (e: React.MouseEvent) => {
+		e.stopPropagation();
+		setResolving(true);
+		await supabase.from('listings').update({ status: 'resolved' }).eq('id', listing.id);
+		setResolving(false);
+		// Optionally, trigger a refresh or callback
+	};
+
 	return (
 		<>
-			<Card $isLost={isLost} onClick={() => setShowDetails(true)}>
+			<Card $isLost={isLost} $isResolved={isResolved} onClick={() => setShowDetails(true)}>
 				{listing.image_url ? (
 					<ImageBox>
 						<CardImage src={listing.image_url} alt={listing.title} />
@@ -537,7 +600,7 @@ export default function ListingCard({
 							)}
 						</TagRow>
 					</TitleTagsRow>
-					<Status $isLost={isLost}>{listing.status.toUpperCase()}</Status>
+					<Status $isLost={isLost} $isResolved={isResolved}>{listing.status.toUpperCase()}</Status>
 				</CardHeader>
 				<Description>{listing.description}</Description>
 				<Info>
@@ -555,6 +618,30 @@ export default function ListingCard({
 					<ClaimButton onClick={e => { e.stopPropagation(); setShowClaimModal(true); }}>
 						I think this is mine
 					</ClaimButton>
+				)}
+				{/* Mark as Resolved button for creator if active, at the bottom of the card */}
+				{canResolve && (
+					<button
+						onClick={handleResolve}
+						disabled={resolving}
+						style={{
+							marginTop: 16,
+							width: '100%',
+							background: '#f472b6',
+							color: '#fff',
+							fontWeight: 700,
+							fontSize: '1.1rem',
+							border: 'none',
+							borderRadius: 8,
+							padding: '0.9rem 0',
+							cursor: 'pointer',
+							boxShadow: '0 2px 8px rgba(245,114,182,0.10)',
+							transition: 'background 0.18s, box-shadow 0.18s',
+							opacity: resolving ? 0.7 : 1
+						}}
+					>
+						{resolving ? 'Marking as Resolved...' : 'Mark as Resolved'}
+					</button>
 				)}
 				{onEdit && (
 					<EditIconButton title="Edit Listing" onClick={e => { e.stopPropagation(); onEdit(listing); }}>

@@ -1,4 +1,4 @@
-export type ListingStatus = 'lost' | 'found';
+export type ListingStatus = 'lost' | 'found' | 'resolved';
 
 export interface Listing {
 	id: string;
