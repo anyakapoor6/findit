@@ -179,6 +179,58 @@ export default function CreateListingPage() {
 	const [selectedSubtype, setSelectedSubtype] = useState<string>('');
 	const [customType, setCustomType] = useState('');
 	const [customSubtype, setCustomSubtype] = useState('');
+	// Map of category to extra fields
+	const CATEGORY_FIELDS: Record<string, { label: string; name: string; type?: string; placeholder?: string; }[]> = {
+		electronics: [
+			{ label: 'Brand or model', name: 'brand_model' },
+			{ label: 'Color', name: 'color' },
+			{ label: 'Accessories or case details', name: 'accessories' },
+			{ label: 'Any lock screen image or sticker?', name: 'lock_screen' },
+		],
+		bags: [
+			{ label: 'Brand', name: 'brand' },
+			{ label: 'Color or pattern', name: 'color_pattern' },
+			{ label: 'Contents inside', name: 'contents' },
+			{ label: 'Signs of wear/damage?', name: 'wear_damage' },
+		],
+		pets: [
+			{ label: 'Breed', name: 'breed' },
+			{ label: 'Color', name: 'color' },
+			{ label: 'Collar/microchip info', name: 'collar_microchip' },
+			{ label: 'Size (small, medium, large)', name: 'size' },
+			{ label: 'Behavior traits', name: 'behavior' },
+		],
+		keys: [
+			{ label: 'Number of keys', name: 'num_keys', type: 'number', placeholder: 'e.g. 3' },
+			{ label: 'Keychain/fob description', name: 'keychain' },
+			{ label: 'Any unique labels or logos?', name: 'labels_logos' },
+		],
+		jewelry: [
+			{ label: 'Material (gold, silver, etc.)', name: 'material' },
+			{ label: 'Engravings or inscriptions', name: 'engraving' },
+			{ label: 'Size or fit notes (optional)', name: 'size_fit' },
+		],
+		clothing: [
+			{ label: 'Brand and size', name: 'brand_size' },
+			{ label: 'Color/pattern', name: 'color_pattern' },
+			{ label: 'Notable logos, text, or tags', name: 'logos_tags' },
+		],
+		documents: [
+			{ label: 'Type of document (passport, ID, etc.)', name: 'doc_type' },
+			{ label: 'Issuing authority (e.g. state, school)', name: 'issuing_authority' },
+			{ label: 'Holder name initials or partial info', name: 'holder_initials' },
+		],
+		toys: [
+			{ label: 'Brand or character name', name: 'brand_character' },
+			{ label: 'Color and size', name: 'color_size' },
+			{ label: 'Any damage or accessories included?', name: 'damage_accessories' },
+		],
+		other: [
+			{ label: 'Free-text description', name: 'other_details' },
+			{ label: 'Any unique identifiers or features', name: 'unique_features' },
+		],
+	};
+	const [extraFields, setExtraFields] = useState<Record<string, string>>({});
 
 	useEffect(() => {
 		const checkAuth = async () => {
@@ -259,13 +311,18 @@ export default function CreateListingPage() {
 		setFormData(prev => ({ ...prev, image_url: '' }));
 	};
 
+	const handleExtraFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+		const { name, value } = e.target;
+		setExtraFields(prev => ({ ...prev, [name]: value }));
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setLoading(true);
 		setError('');
 
 		try {
-			if (!formData.title.trim() || !formData.description.trim() || !formData.location.trim()) {
+			if (!formData.item_type || !formData.title.trim() || !formData.description.trim() || !formData.location.trim() || !formData.date) {
 				throw new Error('Please fill in all required fields');
 			}
 			if (formData.status === 'found' && !selectedFile) {
@@ -279,6 +336,7 @@ export default function CreateListingPage() {
 
 			const listingData = {
 				...formData,
+				...extraFields,
 				image_url: imageUrl
 			};
 
@@ -291,6 +349,10 @@ export default function CreateListingPage() {
 			setLoading(false);
 		}
 	};
+
+	useEffect(() => {
+		setExtraFields({});
+	}, [formData.item_type]);
 
 	if (!user) {
 		return (
@@ -318,7 +380,7 @@ export default function CreateListingPage() {
 							<option value="found">Found Item</option>
 						</StyledSelect>
 					</div>
-					{/* Item Type */}
+					{/* Category */}
 					<div>
 						<Label>Category *</Label>
 						<StyledSelect
@@ -346,7 +408,7 @@ export default function CreateListingPage() {
 							/>
 						)}
 					</div>
-					{/* Item Subtype */}
+					{/* Subcategory */}
 					<div>
 						<Label>Subcategory</Label>
 						<StyledSelect
@@ -386,18 +448,6 @@ export default function CreateListingPage() {
 							required
 						/>
 					</div>
-					{/* Description */}
-					<div>
-						<Label>Description *</Label>
-						<StyledTextArea
-							name="description"
-							value={formData.description}
-							onChange={handleInputChange}
-							placeholder="Detailed description of the item"
-							rows={4}
-							required
-						/>
-					</div>
 					{/* Location */}
 					<div>
 						<Label>Location *</Label>
@@ -421,11 +471,46 @@ export default function CreateListingPage() {
 							required
 						/>
 					</div>
+					{/* Item Details (category-specific) */}
+					{formData.item_type && CATEGORY_FIELDS[formData.item_type] && (
+						<div style={{ margin: '1.2rem 0 0.7rem 0', padding: '1rem', background: '#f8fafc', borderRadius: '0.7rem', border: '1px solid #e0e7ef' }}>
+							<div style={{ fontWeight: 700, fontSize: '1.08rem', marginBottom: 8, color: '#2563eb' }}>Item Details</div>
+							{CATEGORY_FIELDS[formData.item_type].map(field => (
+								<div key={field.name} style={{ marginBottom: 10 }}>
+									<Label>{field.label}</Label>
+									<StyledInput
+										type={field.type || 'text'}
+										name={field.name}
+										value={extraFields[field.name] || ''}
+										onChange={handleExtraFieldChange}
+										placeholder={field.placeholder || ''}
+									/>
+								</div>
+							))}
+						</div>
+					)}
+					{/* Extra Details/Description */}
+					<div>
+						<Label>Extra Details / Description *</Label>
+						<StyledTextArea
+							name="description"
+							value={formData.description}
+							onChange={handleInputChange}
+							placeholder="Detailed description of the item"
+							rows={4}
+							required
+						/>
+					</div>
 					{/* Image Upload */}
 					<div>
 						<Label>
 							Item Image{formData.status === 'found' ? ' (Required for Found Items)' : ' (Optional)'}
 						</Label>
+						{!imagePreview && (
+							<div style={{ color: '#2563eb', fontSize: '0.97rem', marginBottom: 6 }}>
+								Adding a photo improves your chances of someone recognizing your item.
+							</div>
+						)}
 						{!imagePreview ? (
 							<UploadBox>
 								<input
