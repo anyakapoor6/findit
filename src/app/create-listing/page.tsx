@@ -148,6 +148,15 @@ const RemoveButton = styled.button`
 `;
 // Removed unused styled components
 
+async function triggerEmbedding(listingId: string, imageUrl: string, item_type: string, item_subtype: string) {
+	if (!imageUrl) return;
+	await fetch('/api/generate-embedding', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ listingId, imageUrl, item_type, item_subtype })
+	});
+}
+
 export default function CreateListingPage() {
 	const router = useRouter();
 	const [formData, setFormData] = useState<CreateListingData>({
@@ -340,7 +349,13 @@ export default function CreateListingPage() {
 				extra_details: Object.keys(extraFields).length > 0 ? extraFields : null
 			};
 
-			await addListing(listingData);
+			const newListing = await addListing(listingData);
+			await triggerEmbedding(
+				newListing.id,
+				newListing.image_url || '',
+				newListing.item_type || '',
+				newListing.item_subtype || ''
+			);
 			router.push('/');
 		} catch (err: unknown) {
 			const errorMessage = err instanceof Error ? err.message : 'Failed to create listing';

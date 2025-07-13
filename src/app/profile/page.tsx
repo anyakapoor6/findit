@@ -750,7 +750,7 @@ export default function ProfilePage() {
 			{/* User Claims Tab */}
 			{activeTab === 'userClaims' && (
 				<ClaimsSection>
-					<h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 18 }}>Claims You've Made</h2>
+					<h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '18px' }}>Claims You've Made</h2>
 					{userClaimsLoading ? (
 						<div style={{ color: '#888', padding: '2rem', textAlign: 'center' }}>Loading claims...</div>
 					) : userClaims.length === 0 ? (
@@ -782,7 +782,7 @@ export default function ProfilePage() {
 			{/* Claims Tab */}
 			{activeTab === 'claims' && (
 				<ClaimsSection>
-					<h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 18 }}>Claims on My Listings</h2>
+					<h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '18px' }}>Claims on My Listings</h2>
 					{claimsLoading ? (
 						<div style={{ color: '#888', padding: '2rem', textAlign: 'center' }}>Loading claims...</div>
 					) : myClaims.length === 0 ? (

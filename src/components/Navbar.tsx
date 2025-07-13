@@ -211,6 +211,7 @@ export default function Navbar() {
         <NavLinks>
           <NavLink href="/" $variant="default">Home</NavLink>
           <NavLink href="/create-listing" $variant="primary">Create Listing</NavLink>
+          <NavLink href="/matches" $variant="default">Matches</NavLink>
           <Spacer />
           <NavLink href="/profile" $variant="default">Profile</NavLink>
         </NavLinks>
