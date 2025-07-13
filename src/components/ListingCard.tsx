@@ -372,22 +372,21 @@ function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () =
 }
 
 const ClaimButton = styled.button`
-  position: absolute;
-  left: 1rem;
-  bottom: 1rem;
-  background: #2563eb;
+  width: 100%;
+  margin-top: 0.7rem;
+  background: #22c55e;
   color: #fff;
+  font-size: 1.13rem;
+  font-weight: 700;
   border: none;
-  border-radius: 50px;
-  padding: 0.5rem 1.2rem;
-  font-weight: 600;
-  font-size: 1.05rem;
+  border-radius: 0.5rem;
+  padding: 0.85rem 0;
+  box-shadow: 0 2px 8px rgba(34,197,94,0.10);
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-  z-index: 3;
-  transition: background 0.18s;
+  transition: background 0.18s, box-shadow 0.18s;
   &:hover {
-    background: #1d4ed8;
+    background: #16a34a;
+    box-shadow: 0 4px 16px rgba(34,197,94,0.13);
   }
 `;
 
@@ -416,8 +415,9 @@ const EditIconButton = styled.button`
 
 function formatDateUS(dateStr: string) {
 	if (!dateStr) return '';
-	const [year, month, day] = dateStr.split('-');
-	return `${month}/${day}/${year}`;
+	const d = new Date(dateStr);
+	if (isNaN(d.getTime())) return '';
+	return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
 }
 
 function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClose: () => void, listing: any }) {
@@ -549,7 +549,7 @@ export default function ListingCard({
 						<InfoValue>{formatDateUS(listing.date)}</InfoValue>
 					</InfoRow>
 				</Info>
-				{/* Claim button for found listings, only for signed-in users who are not the owner */}
+				{/* Claim button for found listings, only for signed-in users who are not the owner, now directly below the date */}
 				{listing.status === 'found' && user && user.id !== listing.user_id && (
 					<ClaimButton onClick={e => { e.stopPropagation(); setShowClaimModal(true); }}>
 						I think this is mine
