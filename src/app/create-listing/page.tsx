@@ -336,8 +336,8 @@ export default function CreateListingPage() {
 
 			const listingData = {
 				...formData,
-				...extraFields,
-				image_url: imageUrl
+				image_url: imageUrl,
+				extra_details: Object.keys(extraFields).length > 0 ? extraFields : null
 			};
 
 			await addListing(listingData);

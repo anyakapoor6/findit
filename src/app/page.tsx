@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import styled from 'styled-components';
 import SignInModal from '../components/SignInModal';
 import { getCurrentUser } from '../lib/auth';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const Heading = styled.h1`
   font-size: 2.5rem;
@@ -92,6 +93,18 @@ const ListingsGrid = styled.div`
   }
 `;
 
+const ITEM_TYPES = [
+  { value: 'electronics', label: 'Electronics', subtypes: ['Phone', 'Laptop', 'Tablet', 'Headphones', 'Other'] },
+  { value: 'bags', label: 'Bags', subtypes: ['Backpack', 'Handbag', 'Suitcase', 'Wallet', 'Other'] },
+  { value: 'pets', label: 'Pets', subtypes: ['Breed', 'Color', 'Collar/microchip', 'Size', 'Behavior', 'Other'] },
+  { value: 'keys', label: 'Keys', subtypes: ['Car Key', 'House Key', 'Other'] },
+  { value: 'jewelry', label: 'Jewelry', subtypes: ['Ring', 'Necklace', 'Watch', 'Other'] },
+  { value: 'clothing', label: 'Clothing', subtypes: ['Jacket', 'Shirt', 'Shoes', 'Other'] },
+  { value: 'documents', label: 'Documents', subtypes: ['ID', 'Passport', 'Card', 'Other'] },
+  { value: 'toys', label: 'Toys', subtypes: ['Action Figure', 'Doll', 'Plushie', 'Other'] },
+  { value: 'other', label: 'Other', subtypes: ['Other'] },
+];
+
 export default function Home() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,9 +114,39 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [location, setLocation] = useState('');
+  const [category, setCategory] = useState('');
+  const [subcategory, setSubcategory] = useState('');
+  const [date, setDate] = useState('');
   const [showSignIn, setShowSignIn] = useState(false);
   const [userChecked, setUserChecked] = useState(false);
   const userRef = useRef<User | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Sync filter state with URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set('q', search);
+    if (status !== 'all') params.set('status', status);
+    if (location) params.set('location', location);
+    if (category) params.set('category', category);
+    if (subcategory) params.set('subcategory', subcategory);
+    if (date) params.set('date', date);
+    const url = params.toString() ? `/?${params.toString()}` : '/';
+    window.history.replaceState(null, '', url);
+  }, [search, status, location, category, subcategory, date]);
+
+  // On mount, read filters from URL
+  useEffect(() => {
+    if (!searchParams) return;
+    setSearch(searchParams.get('q') || '');
+    setStatus(searchParams.get('status') || 'all');
+    setLocation(searchParams.get('location') || '');
+    setCategory(searchParams.get('category') || '');
+    setSubcategory(searchParams.get('subcategory') || '');
+    setDate(searchParams.get('date') || '');
+    // eslint-disable-next-line
+  }, []);
 
   useEffect(() => {
     const loadListings = async () => {
@@ -162,14 +205,21 @@ export default function Home() {
   // Filtered listings
   const filteredListings = listings.filter(listing => {
     const matchesKeyword =
-      search === '' ||
-      listing.title.toLowerCase().includes(search.toLowerCase()) ||
-      listing.description.toLowerCase().includes(search.toLowerCase());
+      !search ||
+      (listing.title && listing.title.toLowerCase().includes(search.toLowerCase())) ||
+      (listing.description && listing.description.toLowerCase().includes(search.toLowerCase()));
     const matchesStatus =
-      status === 'all' || listing.status === status;
+      !status || status === 'all' || listing.status === status;
     const matchesLocation =
-      location === '' || listing.location.toLowerCase().includes(location.toLowerCase());
-    return matchesKeyword && matchesStatus && matchesLocation;
+      !location || (listing.location && listing.location.toLowerCase().includes(location.toLowerCase()));
+    const matchesCategory =
+      !category || listing.item_type === category;
+    const matchesSubcategory =
+      !subcategory || listing.item_subtype === subcategory;
+    const dbDate = listing.date ? listing.date.slice(0, 10) : '';
+    const matchesDate =
+      !date || dbDate === date;
+    return matchesKeyword && matchesStatus && matchesLocation && matchesCategory && matchesSubcategory && matchesDate;
   });
 
   return (
@@ -199,10 +249,63 @@ export default function Home() {
           </FilterSelect>
           <FilterInput
             type="text"
-            placeholder="Filter by location..."
+            placeholder="Location..."
             value={location}
             onChange={e => setLocation(e.target.value)}
           />
+          <FilterSelect
+            value={category}
+            onChange={e => {
+              setCategory(e.target.value);
+              setSubcategory('');
+            }}
+          >
+            <option value="">All Categories</option>
+            {ITEM_TYPES.map(type => (
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
+          </FilterSelect>
+          <FilterSelect
+            value={subcategory}
+            onChange={e => setSubcategory(e.target.value)}
+            disabled={!category}
+          >
+            <option value="">All Subcategories</option>
+            {ITEM_TYPES.find(t => t.value === category)?.subtypes.map(sub => (
+              <option key={sub} value={sub}>{sub}</option>
+            ))}
+          </FilterSelect>
+          <FilterInput
+            type="date"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+            style={{ minWidth: 120 }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('');
+              setStatus('all');
+              setLocation('');
+              setCategory('');
+              setSubcategory('');
+              setDate('');
+            }}
+            style={{
+              background: '#f1f5f9',
+              color: '#2563eb',
+              border: '1px solid #dbeafe',
+              borderRadius: '0.5rem',
+              padding: '0.5rem 1.2rem',
+              fontWeight: 600,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              marginLeft: 8,
+              minWidth: 120
+            }}
+          >
+            Clear Filters
+          </button>
         </FilterBar>
         <hr style={{ borderColor: '#dbeafe', marginBottom: '2rem' }} />
         <div>

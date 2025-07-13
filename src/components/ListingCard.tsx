@@ -16,7 +16,7 @@ interface ListingCardProps {
 	showActions?: boolean;
 }
 
-const CARD_WIDTH = '270px';
+const CARD_WIDTH = '300px';
 const CARD_HEIGHT = '470px';
 
 const InitialsBox = styled.div`
@@ -56,6 +56,7 @@ const Card = styled.div<{ $isLost: boolean }>`
   border-color: ${({ $isLost }) => ($isLost ? '#fecaca' : '#bbf7d0')};
   transition: box-shadow 0.2s, transform 0.2s;
   position: relative;
+  cursor: pointer;
   &:hover {
     box-shadow: 0 8px 32px rgba(0,0,0,0.13);
     transform: scale(1.04);
@@ -100,15 +101,23 @@ const CardHeader = styled.div`
   justify-content: space-between;
   margin-bottom: 0.5rem;
 `;
+const TitleTagsRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
+`;
 const Title = styled.h3`
   font-size: 1.35rem;
   font-weight: 800;
   color: #111;
   margin: 0;
-  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 `;
 const Status = styled.span<{ $isLost: boolean }>`
   padding: 0.3rem 1rem;
@@ -405,6 +414,40 @@ const EditIconButton = styled.button`
   }
 `;
 
+function formatDateUS(dateStr: string) {
+	if (!dateStr) return '';
+	const [year, month, day] = dateStr.split('-');
+	return `${month}/${day}/${year}`;
+}
+
+function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClose: () => void, listing: any }) {
+	if (!open) return null;
+	return (
+		<div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+			<div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, maxWidth: 500, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', color: '#111', position: 'relative' }}>
+				<button onClick={onClose} style={{ position: 'absolute', top: 12, right: 12, background: '#f1f5f9', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', fontWeight: 700 }}>Close</button>
+				<h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: 16 }}>{listing.title}</h2>
+				<div style={{ marginBottom: 12 }}><b>Status:</b> {listing.status}</div>
+				<div style={{ marginBottom: 12 }}><b>Category:</b> {listing.item_type}</div>
+				<div style={{ marginBottom: 12 }}><b>Subcategory:</b> {listing.item_subtype}</div>
+				<div style={{ marginBottom: 12 }}><b>Description:</b> {listing.description}</div>
+				<div style={{ marginBottom: 12 }}><b>Location:</b> {listing.location}</div>
+				<div style={{ marginBottom: 12 }}><b>Date:</b> {formatDateUS(listing.date)}</div>
+				{listing.extra_details && (
+					<div style={{ marginBottom: 12 }}>
+						<b>Item Details:</b>
+						<ul style={{ margin: '8px 0 0 0', padding: 0, listStyle: 'none' }}>
+							{Object.entries(listing.extra_details).map(([key, value]) => (
+								<li key={key}><b>{key.replace(/_/g, ' ')}:</b> {value as string}</li>
+							))}
+						</ul>
+					</div>
+				)}
+			</div>
+		</div>
+	);
+}
+
 export default function ListingCard({
 	listing,
 	onView,
@@ -416,6 +459,7 @@ export default function ListingCard({
 	const [initials, setInitials] = useState<string>('?');
 	const [showClaimModal, setShowClaimModal] = useState(false);
 	const [user, setUser] = useState<any>(null);
+	const [showDetails, setShowDetails] = useState(false);
 	const router = useRouter();
 
 	useEffect(() => {
@@ -467,74 +511,77 @@ export default function ListingCard({
 	}, []);
 
 	return (
-		<Card $isLost={isLost}>
-			{listing.image_url ? (
-				<ImageBox>
-					<CardImage src={listing.image_url} alt={listing.title} />
-				</ImageBox>
-			) : (
-				<Placeholder title="No image provided">
-					<svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 16h.01M16 12h.01" /></svg>
-					<PlaceholderText>No image</PlaceholderText>
-				</Placeholder>
-			)}
-			<InitialsBox title="Listing owner initials">{initials}</InitialsBox>
-			<CardHeader>
-				<div style={{ flex: 1, minWidth: 0 }}>
-					<Title title={listing.title}>{listing.title}</Title>
-					<TagRow>
-						{listing.item_type && (
-							<Tag $type={listing.item_type || 'other'}>{listing.item_type.charAt(0).toUpperCase() + listing.item_type.slice(1)}</Tag>
+		<>
+			<Card $isLost={isLost} onClick={() => setShowDetails(true)}>
+				{listing.image_url ? (
+					<ImageBox>
+						<CardImage src={listing.image_url} alt={listing.title} />
+					</ImageBox>
+				) : (
+					<Placeholder title="No image provided">
+						<svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 16h.01M16 12h.01" /></svg>
+						<PlaceholderText>No image</PlaceholderText>
+					</Placeholder>
+				)}
+				<InitialsBox title="Listing owner initials">{initials}</InitialsBox>
+				<CardHeader>
+					<TitleTagsRow>
+						<Title title={listing.title}>{listing.title}</Title>
+						<TagRow style={{ margin: 0 }}>
+							{listing.item_type && (
+								<Tag $type={listing.item_type || 'other'}>{listing.item_type.charAt(0).toUpperCase() + listing.item_type.slice(1)}</Tag>
+							)}
+							{listing.item_subtype && (
+								<Tag $type={listing.item_type || 'other'}>{listing.item_subtype.charAt(0).toUpperCase() + listing.item_subtype.slice(1)}</Tag>
+							)}
+						</TagRow>
+					</TitleTagsRow>
+					<Status $isLost={isLost}>{listing.status.toUpperCase()}</Status>
+				</CardHeader>
+				<Description>{listing.description}</Description>
+				<Info>
+					<InfoRow>
+						<InfoLabel>Location:</InfoLabel>
+						<InfoValue title={listing.location}>{listing.location}</InfoValue>
+					</InfoRow>
+					<InfoRow>
+						<InfoLabel>Date:</InfoLabel>
+						<InfoValue>{formatDateUS(listing.date)}</InfoValue>
+					</InfoRow>
+				</Info>
+				{/* Claim button for found listings, only for signed-in users who are not the owner */}
+				{listing.status === 'found' && user && user.id !== listing.user_id && (
+					<ClaimButton onClick={e => { e.stopPropagation(); setShowClaimModal(true); }}>
+						I think this is mine
+					</ClaimButton>
+				)}
+				{onEdit && (
+					<EditIconButton title="Edit Listing" onClick={e => { e.stopPropagation(); onEdit(listing); }}>
+						<FaPencilAlt />
+					</EditIconButton>
+				)}
+				<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
+				{showActions && (
+					<Actions>
+						{onView && (
+							<ActionButton className="view" onClick={e => { e.stopPropagation(); onView(listing); }}>
+								View Details
+							</ActionButton>
 						)}
-						{listing.item_subtype && (
-							<Tag $type={listing.item_type || 'other'}>{listing.item_subtype.charAt(0).toUpperCase() + listing.item_subtype.slice(1)}</Tag>
+						{onEdit && (
+							<ActionButton className="edit" onClick={e => { e.stopPropagation(); onEdit(listing); }}>
+								Edit
+							</ActionButton>
 						)}
-					</TagRow>
-				</div>
-				<Status $isLost={isLost}>{listing.status}</Status>
-			</CardHeader>
-			<Description>{listing.description}</Description>
-			<Info>
-				<InfoRow>
-					<InfoLabel>Location:</InfoLabel>
-					<InfoValue title={listing.location}>{listing.location}</InfoValue>
-				</InfoRow>
-				<InfoRow>
-					<InfoLabel>Date:</InfoLabel>
-					<InfoValue>{new Date(listing.date).toLocaleDateString()}</InfoValue>
-				</InfoRow>
-			</Info>
-			{/* Claim button for found listings, only for signed-in users who are not the owner */}
-			{listing.status === 'found' && user && user.id !== listing.user_id && (
-				<ClaimButton onClick={() => setShowClaimModal(true)}>
-					I think this is mine
-				</ClaimButton>
-			)}
-			{onEdit && (
-				<EditIconButton title="Edit Listing" onClick={() => onEdit(listing)}>
-					<FaPencilAlt />
-				</EditIconButton>
-			)}
-			<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
-			{showActions && (
-				<Actions>
-					{onView && (
-						<ActionButton className="view" onClick={() => onView(listing)}>
-							View Details
-						</ActionButton>
-					)}
-					{onEdit && (
-						<ActionButton className="edit" onClick={() => onEdit(listing)}>
-							Edit
-						</ActionButton>
-					)}
-					{onDelete && (
-						<ActionButton className="delete" onClick={() => onDelete(listing)}>
-							Delete
-						</ActionButton>
-					)}
-				</Actions>
-			)}
-		</Card>
+						{onDelete && (
+							<ActionButton className="delete" onClick={e => { e.stopPropagation(); onDelete(listing); }}>
+								Delete
+							</ActionButton>
+						)}
+					</Actions>
+				)}
+			</Card>
+			<ListingDetailsModal open={showDetails} onClose={() => setShowDetails(false)} listing={listing} />
+		</>
 	);
 } 
