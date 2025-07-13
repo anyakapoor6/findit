@@ -415,9 +415,10 @@ const EditIconButton = styled.button`
 
 function formatDateUS(dateStr: string) {
 	if (!dateStr) return '';
-	const d = new Date(dateStr);
-	if (isNaN(d.getTime())) return '';
-	return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+	// Use only the date part (YYYY-MM-DD)
+	const [year, month, day] = dateStr.split('T')[0].split('-');
+	if (!year || !month || !day) return '';
+	return `${parseInt(month, 10)}/${parseInt(day, 10)}/${year}`;
 }
 
 function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClose: () => void, listing: any }) {
