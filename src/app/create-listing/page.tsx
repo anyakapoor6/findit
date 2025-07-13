@@ -164,6 +164,21 @@ export default function CreateListingPage() {
 	const [error, setError] = useState('');
 	const [user, setUser] = useState<User | null>(null);
 	const [showSignIn, setShowSignIn] = useState(false);
+	const ITEM_TYPES = [
+		{ value: 'electronics', label: 'Electronics', subtypes: ['Phone', 'Laptop', 'Tablet', 'Headphones', 'Other'] },
+		{ value: 'bags', label: 'Bags', subtypes: ['Backpack', 'Handbag', 'Suitcase', 'Wallet', 'Other'] },
+		{ value: 'pets', label: 'Pets', subtypes: ['Dog', 'Cat', 'Bird', 'Other'] },
+		{ value: 'keys', label: 'Keys', subtypes: ['Car Key', 'House Key', 'Other'] },
+		{ value: 'jewelry', label: 'Jewelry', subtypes: ['Ring', 'Necklace', 'Watch', 'Other'] },
+		{ value: 'clothing', label: 'Clothing', subtypes: ['Jacket', 'Shirt', 'Shoes', 'Other'] },
+		{ value: 'documents', label: 'Documents', subtypes: ['ID', 'Passport', 'Card', 'Other'] },
+		{ value: 'toys', label: 'Toys', subtypes: ['Action Figure', 'Doll', 'Plushie', 'Other'] },
+		{ value: 'other', label: 'Other', subtypes: ['Other'] },
+	];
+	const [selectedType, setSelectedType] = useState<string>('');
+	const [selectedSubtype, setSelectedSubtype] = useState<string>('');
+	const [customType, setCustomType] = useState('');
+	const [customSubtype, setCustomSubtype] = useState('');
 
 	useEffect(() => {
 		const checkAuth = async () => {
@@ -221,6 +236,21 @@ export default function CreateListingPage() {
 			};
 			reader.readAsDataURL(file);
 		}
+	};
+
+	const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		const type = e.target.value;
+		setSelectedType(type);
+		setSelectedSubtype('');
+		setCustomType('');
+		setCustomSubtype('');
+		setFormData(prev => ({ ...prev, item_type: type, item_subtype: '' }));
+	};
+	const handleSubtypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		const subtype = e.target.value;
+		setSelectedSubtype(subtype);
+		setCustomSubtype('');
+		setFormData(prev => ({ ...prev, item_subtype: subtype }));
 	};
 
 	const removeImage = () => {
@@ -287,6 +317,62 @@ export default function CreateListingPage() {
 							<option value="lost">Lost Item</option>
 							<option value="found">Found Item</option>
 						</StyledSelect>
+					</div>
+					{/* Item Type */}
+					<div>
+						<Label>Category *</Label>
+						<StyledSelect
+							name="item_type"
+							value={formData.item_type || ''}
+							onChange={handleTypeChange}
+							required
+						>
+							<option value="" disabled>Select a category</option>
+							{ITEM_TYPES.map(type => (
+								<option key={type.value} value={type.value}>{type.label}</option>
+							))}
+						</StyledSelect>
+						{formData.item_type === 'other' && (
+							<StyledInput
+								type="text"
+								placeholder="Enter custom category"
+								value={customType}
+								onChange={e => {
+									setCustomType(e.target.value);
+									setFormData(prev => ({ ...prev, item_type: e.target.value }));
+								}}
+								required
+								style={{ marginTop: 8 }}
+							/>
+						)}
+					</div>
+					{/* Item Subtype */}
+					<div>
+						<Label>Subcategory</Label>
+						<StyledSelect
+							name="item_subtype"
+							value={formData.item_subtype || ''}
+							onChange={handleSubtypeChange}
+							disabled={!formData.item_type || formData.item_type === 'other'}
+						>
+							<option value="">{formData.item_type && formData.item_type !== 'other' ? 'Select a subcategory' : 'Select a category first'}</option>
+							{ITEM_TYPES.find(t => t.value === formData.item_type)?.subtypes.map(sub => (
+								<option key={sub} value={sub}>{sub}</option>
+							))}
+						</StyledSelect>
+						{((formData.item_type === 'other') || (formData.item_subtype === 'Other' && formData.item_type !== 'other')) && (
+							<StyledInput
+								type="text"
+								placeholder="Enter custom subcategory"
+								value={customSubtype}
+								onChange={e => {
+									setCustomSubtype(e.target.value);
+									setFormData(prev => ({ ...prev, item_subtype: e.target.value }));
+								}}
+								required
+								style={{ marginTop: 8 }}
+							/>
+						)}
 					</div>
 					{/* Title */}
 					<div>

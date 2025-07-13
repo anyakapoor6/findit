@@ -185,6 +185,41 @@ const PlaceholderText = styled.div`
   text-align: center;
 `;
 
+const TagRow = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.3rem 0 0.7rem 0;
+  flex-wrap: wrap;
+`;
+const Tag = styled.span<{ $type: string }>`
+  display: inline-block;
+  padding: 0.28em 0.95em;
+  border-radius: 1.2em;
+  font-size: 0.98rem;
+  font-weight: 600;
+  background: ${({ $type }) =>
+		$type === 'electronics' ? '#e0f2fe' :
+			$type === 'bags' ? '#fef9c3' :
+				$type === 'pets' ? '#fce7f3' :
+					$type === 'keys' ? '#dcfce7' :
+						$type === 'jewelry' ? '#ede9fe' :
+							$type === 'clothing' ? '#e0e7ff' :
+								$type === 'documents' ? '#fee2e2' :
+									$type === 'toys' ? '#ffedd5' : // light orange
+										'#f3f4f6'};
+  color: ${({ $type }) =>
+		$type === 'electronics' ? '#0369a1' :
+			$type === 'bags' ? '#b45309' :
+				$type === 'pets' ? '#be185d' :
+					$type === 'keys' ? '#166534' :
+						$type === 'jewelry' ? '#6d28d9' :
+							$type === 'clothing' ? '#3730a3' :
+								$type === 'documents' ? '#b91c1c' :
+									$type === 'toys' ? '#ea580c' : // dark orange
+										'#444'};
+  border: none;
+`;
+
 // Placeholder for ClaimModal (to be implemented)
 function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () => void, listingId: string }) {
 	const [description, setDescription] = useState('');
@@ -445,7 +480,17 @@ export default function ListingCard({
 			)}
 			<InitialsBox title="Listing owner initials">{initials}</InitialsBox>
 			<CardHeader>
-				<Title title={listing.title}>{listing.title}</Title>
+				<div style={{ flex: 1, minWidth: 0 }}>
+					<Title title={listing.title}>{listing.title}</Title>
+					<TagRow>
+						{listing.item_type && (
+							<Tag $type={listing.item_type || 'other'}>{listing.item_type.charAt(0).toUpperCase() + listing.item_type.slice(1)}</Tag>
+						)}
+						{listing.item_subtype && (
+							<Tag $type={listing.item_type || 'other'}>{listing.item_subtype.charAt(0).toUpperCase() + listing.item_subtype.slice(1)}</Tag>
+						)}
+					</TagRow>
+				</div>
 				<Status $isLost={isLost}>{listing.status}</Status>
 			</CardHeader>
 			<Description>{listing.description}</Description>

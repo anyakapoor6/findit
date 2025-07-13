@@ -10,6 +10,8 @@ export interface Listing {
 	image_url?: string;
 	user_id: string;
 	created_at: string;
+	item_type?: string;
+	item_subtype?: string;
 }
 
 export interface CreateListingData {
@@ -19,6 +21,8 @@ export interface CreateListingData {
 	location: string;
 	date: string;
 	image_url?: string;
+	item_type?: string;
+	item_subtype?: string;
 }
 
 export interface User {
