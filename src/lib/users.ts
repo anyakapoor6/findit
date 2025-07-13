@@ -91,4 +91,49 @@ export async function syncUserProfile(userId: string, email: string, name?: stri
 		console.error('Error syncing user profile:', error);
 		return null;
 	}
+}
+
+// User Preferences
+export interface UserPreferences {
+	user_id: string;
+	show_phone_on_claim: boolean;
+	show_email_on_claim: boolean;
+	created_at?: string;
+}
+
+export async function getUserPreferences(userId: string): Promise<UserPreferences | null> {
+	try {
+		const { data, error } = await supabase
+			.from('user_preferences')
+			.select('*')
+			.eq('user_id', userId)
+			.single();
+		if (error) {
+			if (error.code === 'PGRST116') return null; // Not found
+			console.error('Error fetching user preferences:', error);
+			return null;
+		}
+		return data;
+	} catch (error) {
+		console.error('Error fetching user preferences:', error);
+		return null;
+	}
+}
+
+export async function upsertUserPreferences(userId: string, prefs: Partial<UserPreferences>): Promise<UserPreferences | null> {
+	try {
+		const { data, error } = await supabase
+			.from('user_preferences')
+			.upsert({ user_id: userId, ...prefs }, { onConflict: 'user_id' })
+			.select()
+			.single();
+		if (error) {
+			console.error('Error upserting user preferences:', error);
+			return null;
+		}
+		return data;
+	} catch (error) {
+		console.error('Error upserting user preferences:', error);
+		return null;
+	}
 } 

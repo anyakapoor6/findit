@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styled from 'styled-components';
 import { getCurrentUser, signOut } from '../../lib/auth';
-import { getUserProfile, updateUserProfile } from '../../lib/users';
+import { getUserProfile, updateUserProfile, getUserPreferences, upsertUserPreferences, UserPreferences } from '../../lib/users';
 import { fetchUserListings } from '../../lib/listings';
 import { Profile, Listing, User } from '../../lib/types';
 import ListingCard from '../../components/ListingCard';
 import SignInModal from '../../components/SignInModal';
 import { supabase } from '../../utils/supabaseClient';
 import EditListingModal from '../../components/EditListingModal';
+import { useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 const Container = styled.div`
   max-width: 800px;
@@ -179,6 +181,30 @@ const ClaimStatus = styled.span<{ $status: string }>`
   background: ${({ $status }) => $status === 'pending' ? '#fef9c3' : $status === 'accepted' ? '#bbf7d0' : '#fee2e2'};
   color: ${({ $status }) => $status === 'pending' ? '#b45309' : $status === 'accepted' ? '#166534' : '#b91c1c'};
 `;
+const ToggleSwitch = styled.label<{ $checked?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  cursor: pointer;
+  font-size: 1.08rem;
+  font-weight: 500;
+  margin-bottom: 0.7rem;
+  color: ${({ $checked }) => $checked ? '#111' : '#888'};
+  input {
+    accent-color: #2563eb;
+    width: 1.3em;
+    height: 1.3em;
+  }
+`;
+const Warning = styled.div`
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 1.01rem;
+`;
 
 export default function ProfilePage() {
 	const [user, setUser] = useState<User | null>(null);
@@ -190,7 +216,17 @@ export default function ProfilePage() {
 	const [showNamePrompt, setShowNamePrompt] = useState(false);
 	const [showSignIn, setShowSignIn] = useState(false);
 	const router = useRouter();
-	const [activeTab, setActiveTab] = useState<'profile' | 'claims'>('profile');
+	const searchParams = useSearchParams();
+	const [activeTab, setActiveTab] = useState<'profile' | 'userClaims' | 'claims'>(() => {
+		const tab = searchParams?.get('tab');
+		if (tab === 'claims' || tab === 'userClaims' || tab === 'profile') return tab;
+		return 'profile';
+	});
+	useEffect(() => {
+		const tab = searchParams?.get('tab');
+		if (tab === 'claims' || tab === 'userClaims' || tab === 'profile') setActiveTab(tab);
+		// eslint-disable-next-line
+	}, [searchParams]);
 	const [myClaims, setMyClaims] = useState<any[]>([]);
 	const [claimsLoading, setClaimsLoading] = useState(false);
 	const [phone, setPhone] = useState('');
@@ -200,7 +236,33 @@ export default function ProfilePage() {
 	const [email, setEmail] = useState('');
 	const [editingListing, setEditingListing] = useState<Listing | null>(null);
 	const [mounted, setMounted] = useState(false);
+	const [finderProfiles, setFinderProfiles] = useState<Record<string, any>>({});
+	const [prefs, setPrefs] = useState<UserPreferences | null>(null);
+	const [prefsLoading, setPrefsLoading] = useState(true);
+	const [prefsError, setPrefsError] = useState('');
+	const fetchFinderProfile = useCallback(async (userId: string) => {
+		if (finderProfiles[userId]) return finderProfiles[userId];
+		const profile = await getUserProfile(userId);
+		setFinderProfiles(prev => ({ ...prev, [userId]: profile }));
+		return profile;
+	}, [finderProfiles]);
 	useEffect(() => { setMounted(true); }, []);
+
+	useEffect(() => {
+		if (!user) return;
+		setPrefsLoading(true);
+		getUserPreferences(user.id).then((data) => {
+			setPrefs(data || {
+				user_id: user.id,
+				show_phone_on_claim: true,
+				show_email_on_claim: true,
+			});
+			setPrefsLoading(false);
+		}).catch(() => {
+			setPrefsError('Could not load contact preferences.');
+			setPrefsLoading(false);
+		});
+	}, [user]);
 
 	const handleEditListing = (listing: Listing) => {
 		setEditingListing(listing);
@@ -284,6 +346,41 @@ export default function ProfilePage() {
 		}
 		if (activeTab === 'claims') fetchClaims();
 	}, [activeTab, user]);
+
+	// Add state for user claims
+	const [userClaims, setUserClaims] = useState<any[]>([]);
+	const [userClaimsLoading, setUserClaimsLoading] = useState(false);
+
+	// Fetch claims made by the user
+	useEffect(() => {
+		async function fetchUserClaims() {
+			if (!user) return;
+			setUserClaimsLoading(true);
+			// Get all claims where the user is the claimant
+			const { data: claims, error } = await supabase
+				.from('claims')
+				.select('*, listing:listings(*)')
+				.eq('claimant_id', user.id)
+				.order('created_at', { ascending: false });
+			if (!error && claims) {
+				setUserClaims(claims);
+			} else {
+				setUserClaims([]);
+			}
+			setUserClaimsLoading(false);
+		}
+		if (activeTab === 'userClaims') fetchUserClaims();
+	}, [activeTab, user]);
+
+	useEffect(() => {
+		if (activeTab === 'userClaims' && userClaims.length > 0) {
+			userClaims.forEach(claim => {
+				if (claim.listing?.user_id && !finderProfiles[claim.listing.user_id]) {
+					fetchFinderProfile(claim.listing.user_id);
+				}
+			});
+		}
+	}, [activeTab, userClaims, finderProfiles, fetchFinderProfile]);
 
 	const handleSetName = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -413,6 +510,19 @@ export default function ProfilePage() {
 		setProfile(prev => prev ? { ...prev, listings: updatedUserListings } : null);
 	};
 
+	const handleTogglePref = async (key: 'show_phone_on_claim' | 'show_email_on_claim', value: boolean) => {
+		if (!prefs) return;
+		// Enforce at least one enabled
+		if (!value && !prefs[(key === 'show_phone_on_claim' ? 'show_email_on_claim' : 'show_phone_on_claim')]) {
+			setPrefsError('At least one contact method must be enabled so people can reach you when claims are accepted.');
+			return;
+		}
+		setPrefsError('');
+		const newPrefs = { ...prefs, [key]: value };
+		setPrefs(newPrefs);
+		await upsertUserPreferences(prefs.user_id, newPrefs);
+	};
+
 	if (loading && mounted) {
 		return (
 			<Container>
@@ -440,6 +550,7 @@ export default function ProfilePage() {
 			{/* Tabs */}
 			<div style={{ display: 'flex', marginBottom: '2rem' }}>
 				<TabButton className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>Profile</TabButton>
+				<TabButton className={activeTab === 'userClaims' ? 'active' : ''} onClick={() => setActiveTab('userClaims')}>Claims</TabButton>
 				<TabButton className={activeTab === 'claims' ? 'active' : ''} onClick={() => setActiveTab('claims')}>Claims on My Listings</TabButton>
 			</div>
 			{/* Profile Tab */}
@@ -593,12 +704,80 @@ export default function ProfilePage() {
 					</ProfileCard>
 
 					<ProfileCard>
+						<SectionTitle>Contact Preferences</SectionTitle>
+						{prefsLoading ? (
+							<div style={{ color: '#888', marginBottom: 12 }}>Loading preferences...</div>
+						) : (
+							<>
+								<ToggleSwitch $checked={!!prefs?.show_phone_on_claim}>
+									<input
+										type="checkbox"
+										checked={!!prefs?.show_phone_on_claim}
+										onChange={e => handleTogglePref('show_phone_on_claim', e.target.checked)}
+									/>
+									Show my phone number after a claim is accepted
+									<span style={{ color: '#888', fontSize: '0.97rem', marginLeft: 8 }}>
+										({profile?.phone_number || 'Not set'})
+									</span>
+								</ToggleSwitch>
+								<ToggleSwitch $checked={!!prefs?.show_email_on_claim}>
+									<input
+										type="checkbox"
+										checked={!!prefs?.show_email_on_claim}
+										onChange={e => handleTogglePref('show_email_on_claim', e.target.checked)}
+									/>
+									Show my email address after a claim is accepted
+									<span style={{ color: '#888', fontSize: '0.97rem', marginLeft: 8 }}>
+										({user?.email})
+									</span>
+								</ToggleSwitch>
+								{prefsError && <Warning>{prefsError}</Warning>}
+							</>
+						)}
+						<div style={{ color: '#888', fontSize: '0.97rem', marginTop: 4 }}>
+							At least one contact method must be enabled so people can reach you when claims are accepted.
+						</div>
+					</ProfileCard>
+
+					<ProfileCard>
 						<SectionTitle>Account Actions</SectionTitle>
 						<SignOutButton onClick={handleSignOut}>
 							Sign Out
 						</SignOutButton>
 					</ProfileCard>
 				</>
+			)}
+			{/* User Claims Tab */}
+			{activeTab === 'userClaims' && (
+				<ClaimsSection>
+					<h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 18 }}>Claims You've Made</h2>
+					{userClaimsLoading ? (
+						<div style={{ color: '#888', padding: '2rem', textAlign: 'center' }}>Loading claims...</div>
+					) : userClaims.length === 0 ? (
+						<div style={{ color: '#888', padding: '2rem', textAlign: 'center' }}>You haven't made any claims yet.</div>
+					) : userClaims.map(claim => (
+						<ClaimCard key={claim.id}>
+							<div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+								<span style={{ fontWeight: 600, fontSize: '1.08rem' }}>{claim.listing?.title || 'Listing'}</span>
+								<ClaimStatus $status={claim.status?.toUpperCase()} style={{
+									background: claim.status === 'accepted' ? '#bbf7d0' : claim.status === 'rejected' ? '#fee2e2' : undefined,
+									color: claim.status === 'accepted' ? '#166534' : claim.status === 'rejected' ? '#b91c1c' : undefined,
+									borderColor: claim.status === 'accepted' ? '#4ade80' : claim.status === 'rejected' ? '#fca5a5' : undefined
+								}}>{claim.status?.toUpperCase()}</ClaimStatus>
+							</div>
+							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Finder:</b> {finderProfiles[claim.listing?.user_id]?.email || claim.listing?.user_id}</div>
+							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Features/Marks:</b> {claim.description}</div>
+							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Where lost:</b> {claim.where_lost}</div>
+							{claim.contents && <div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Contents:</b> {claim.contents}</div>}
+							{claim.proof_image_url && <div style={{ margin: '0.7rem 0' }}><img src={claim.proof_image_url} alt="Proof" style={{ maxWidth: 120, borderRadius: 8 }} /></div>}
+							{claim.status === 'accepted' && claim.listing && (
+								<div style={{ color: '#059669', fontWeight: 600, margin: '0.7rem 0' }}>
+									Contact the finder: {finderProfiles[claim.listing.user_id]?.email || claim.listing.user_id}
+								</div>
+							)}
+						</ClaimCard>
+					))}
+				</ClaimsSection>
 			)}
 			{/* Claims Tab */}
 			{activeTab === 'claims' && (

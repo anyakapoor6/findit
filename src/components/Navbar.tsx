@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../utils/supabaseClient';
+import { getListing } from '../lib/listings';
 
 const Nav = styled.nav`
   position: sticky;
@@ -67,16 +68,16 @@ const NavLink = styled(Link) <{ $variant?: 'default' | 'primary' }>`
   color: #111;
   cursor: pointer;
   ${({ $variant = 'default' }) => {
-		switch ($variant) {
-			case 'default':
-				return `
+    switch ($variant) {
+      case 'default':
+        return `
           background: none;
           &:hover {
             background-color: rgba(59, 130, 246, 0.1);
           }
         `
-			case 'primary':
-				return `
+      case 'primary':
+        return `
           background-color: #2563eb;
           color: white;
           font-weight: 600;
@@ -85,8 +86,8 @@ const NavLink = styled(Link) <{ $variant?: 'default' | 'primary' }>`
             background-color: #1d4ed8;
           }
         `
-		}
-	}}
+    }
+  }}
 `
 
 const BellButton = styled.button`
@@ -146,102 +147,120 @@ const NotifDot = styled.span`
 `;
 
 export default function Navbar() {
-	const router = useRouter();
-	const [showDropdown, setShowDropdown] = useState(false);
-	const [notifications, setNotifications] = useState<any[]>([]);
-	const [notifLoading, setNotifLoading] = useState(false);
-	const [notifUser, setNotifUser] = useState<any>(null);
-	const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifUser, setNotifUser] = useState<any>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-	// Fetch current user for notifications
-	useEffect(() => {
-		supabase.auth.getSession().then(({ data }) => {
-			setNotifUser(data.session?.user || null);
-		});
-		const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-			setNotifUser(session?.user || null);
-		});
-		return () => {
-			listener?.subscription.unsubscribe();
-		};
-	}, []);
+  // Fetch current user for notifications
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setNotifUser(data.session?.user || null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setNotifUser(session?.user || null);
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
 
-	// Fetch notifications when dropdown opens
-	useEffect(() => {
-		if (showDropdown && notifUser) {
-			setNotifLoading(true);
-			supabase
-				.from('notifications')
-				.select('*')
-				.eq('user_id', notifUser.id)
-				.order('created_at', { ascending: false })
-				.then(({ data }) => {
-					setNotifications(data || []);
-					setNotifLoading(false);
-				});
-		}
-	}, [showDropdown, notifUser]);
+  // Fetch notifications when dropdown opens
+  useEffect(() => {
+    if (showDropdown && notifUser) {
+      setNotifLoading(true);
+      supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', notifUser.id)
+        .order('created_at', { ascending: false })
+        .then(({ data }) => {
+          setNotifications(data || []);
+          setNotifLoading(false);
+        });
+    }
+  }, [showDropdown, notifUser]);
 
-	// Close dropdown on outside click
-	useEffect(() => {
-		function handleClick(e: MouseEvent) {
-			if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-				setShowDropdown(false);
-			}
-		}
-		if (showDropdown) {
-			document.addEventListener('mousedown', handleClick);
-		}
-		return () => document.removeEventListener('mousedown', handleClick);
-	}, [showDropdown]);
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClick);
+    }
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showDropdown]);
 
-	// Mark notification as read
-	const markAsRead = async (notifId: string) => {
-		setNotifications((prev) => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
-		await supabase.from('notifications').update({ is_read: true }).eq('id', notifId);
-	};
+  // Mark notification as read
+  const markAsRead = async (notifId: string) => {
+    setNotifications((prev) => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
+    await supabase.from('notifications').update({ is_read: true }).eq('id', notifId);
+  };
 
-	return (
-		<Nav>
-			<NavContainer>
-				<Link href="/">
-					<Logo>FindIt</Logo>
-				</Link>
-				<NavLinks>
-					<NavLink href="/" $variant="default">Home</NavLink>
-					<NavLink href="/create-listing" $variant="primary">Create Listing</NavLink>
-					<Spacer />
-					<NavLink href="/profile" $variant="default">Profile</NavLink>
-				</NavLinks>
-				{/* Notification Bell */}
-				<div style={{ position: 'relative' }}>
-					<BellButton onClick={() => setShowDropdown(v => !v)} aria-label="Notifications">
-						<svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-						{notifications.some(n => !n.is_read) && <BellDot />}
-					</BellButton>
-					{showDropdown && (
-						<NotifDropdown ref={dropdownRef}>
-							{notifLoading ? (
-								<div style={{ padding: '1.2rem', textAlign: 'center', color: '#888' }}>Loading...</div>
-							) : notifications.length === 0 ? (
-								<div style={{ padding: '1.2rem', textAlign: 'center', color: '#888' }}>No notifications</div>
-							) : notifications.map(n => (
-								<NotifItem
-									key={n.id}
-									$unread={!n.is_read}
-									onClick={() => {
-										markAsRead(n.id);
-										if (n.listing_id) window.location.href = `/found?listing=${n.listing_id}`;
-									}}
-								>
-									{!n.is_read && <NotifDot />}
-									<span>{n.message}</span>
-								</NotifItem>
-							))}
-						</NotifDropdown>
-					)}
-				</div>
-			</NavContainer>
-		</Nav>
-	);
+  return (
+    <Nav>
+      <NavContainer>
+        <Link href="/">
+          <Logo>FindIt</Logo>
+        </Link>
+        <NavLinks>
+          <NavLink href="/" $variant="default">Home</NavLink>
+          <NavLink href="/create-listing" $variant="primary">Create Listing</NavLink>
+          <Spacer />
+          <NavLink href="/profile" $variant="default">Profile</NavLink>
+        </NavLinks>
+        {/* Notification Bell */}
+        <div style={{ position: 'relative' }}>
+          <BellButton onClick={() => setShowDropdown(v => !v)} aria-label="Notifications">
+            <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            {notifications.some(n => !n.is_read) && <BellDot />}
+          </BellButton>
+          {showDropdown && (
+            <NotifDropdown ref={dropdownRef}>
+              {notifLoading ? (
+                <div style={{ padding: '1.2rem', textAlign: 'center', color: '#888' }}>Loading...</div>
+              ) : notifications.length === 0 ? (
+                <div style={{ padding: '1.2rem', textAlign: 'center', color: '#888' }}>No notifications</div>
+              ) : notifications.map(n => (
+                <NotifItem
+                  key={n.id}
+                  $unread={!n.is_read}
+                  onClick={async () => {
+                    markAsRead(n.id);
+                    if (n.type === 'claim_on_listing' || n.type === 'claim_submitted') {
+                      router.push('/profile?tab=claims');
+                    } else if (n.type === 'claim_update' || n.type === 'claim_accepted' || n.type === 'claim_rejected') {
+                      router.push('/profile?tab=userClaims');
+                    }
+                  }}
+                >
+                  {!n.is_read && <NotifDot />}
+                  <span>
+                    {n.message}
+                    {n.listing_id && !n.message.includes('listing') && (
+                      <NotifListingTitle listingId={n.listing_id} />
+                    )}
+                  </span>
+                </NotifItem>
+              ))}
+            </NotifDropdown>
+          )}
+        </div>
+      </NavContainer>
+    </Nav>
+  );
+}
+
+// Helper component to fetch and display listing title
+function NotifListingTitle({ listingId }: { listingId: string }) {
+  const [title, setTitle] = useState<string>('');
+  useEffect(() => {
+    getListing(listingId).then(listing => setTitle(listing.title)).catch(() => { });
+  }, [listingId]);
+  return title ? `: ${title}` : '';
 } 
