@@ -9,6 +9,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import styled from 'styled-components';
 // Removed unused Link import
 import SignInModal from '../../components/SignInModal';
+import { triggerMatchFinding, getMatchesForListing, notifyUsersOfMatch } from '../../lib/matches';
 
 const PageContainer = styled.div`
   min-height: 80vh;
@@ -155,6 +156,12 @@ async function triggerEmbedding(listingId: string, imageUrl: string, item_type: 
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ listingId, imageUrl, item_type, item_subtype })
 	});
+}
+
+// Placeholder for fetching user notification preferences
+async function getUserNotificationPrefs(userId: string) {
+	// TODO: Replace with real preferences fetch
+	return { webNotifications: true };
 }
 
 export default function CreateListingPage() {
@@ -356,6 +363,20 @@ export default function CreateListingPage() {
 				newListing.item_type || '',
 				newListing.item_subtype || ''
 			);
+
+			// --- AI MATCHING & NOTIFICATIONS ---
+			// Trigger match finding (Supabase RPC)
+			await triggerMatchFinding(newListing.id);
+			// Fetch new matches for this listing
+			const matches = await getMatchesForListing(newListing.id);
+			// For each match, send notifications
+			for (const match of matches) {
+				const user1Prefs = await getUserNotificationPrefs(match.listing_user_id);
+				const user2Prefs = await getUserNotificationPrefs(match.matched_listing_user_id);
+				await notifyUsersOfMatch(match, user1Prefs, user2Prefs);
+			}
+			// --- END AI MATCHING & NOTIFICATIONS ---
+
 			router.push('/');
 		} catch (err: unknown) {
 			const errorMessage = err instanceof Error ? err.message : 'Failed to create listing';
@@ -527,7 +548,34 @@ export default function CreateListingPage() {
 							</div>
 						)}
 						{!imagePreview ? (
-							<UploadBox>
+							<UploadBox
+								onDragOver={e => {
+									e.preventDefault();
+									e.stopPropagation();
+								}}
+								onDrop={e => {
+									e.preventDefault();
+									e.stopPropagation();
+									if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+										const file = e.dataTransfer.files[0];
+										if (!file.type.startsWith('image/')) {
+											setError('Please select an image file');
+											return;
+										}
+										if (file.size > 5 * 1024 * 1024) {
+											setError('Image size must be less than 5MB');
+											return;
+										}
+										setSelectedFile(file);
+										setError('');
+										const reader = new FileReader();
+										reader.onload = (ev) => {
+											setImagePreview(ev.target?.result as string);
+										};
+										reader.readAsDataURL(file);
+									}
+								}}
+							>
 								<input
 									type="file"
 									accept="image/*"

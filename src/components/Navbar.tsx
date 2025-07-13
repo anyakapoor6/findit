@@ -152,6 +152,7 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifUser, setNotifUser] = useState<any>(null);
+  const [hasUnread, setHasUnread] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch current user for notifications
@@ -167,6 +168,39 @@ export default function Navbar() {
     };
   }, []);
 
+  // Real-time notification subscription
+  useEffect(() => {
+    if (!notifUser) return;
+    // Initial fetch for unread
+    const fetchUnread = async () => {
+      const { data } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', notifUser.id)
+        .eq('is_read', false)
+        .limit(1);
+      setHasUnread(Boolean(data && data.length > 0));
+    };
+    fetchUnread();
+    // Subscribe to new notifications
+    const channel = supabase
+      .channel('public:notifications')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${notifUser.id}` },
+        (payload) => {
+          setHasUnread(true);
+        }
+      )
+      .subscribe();
+    // Polling fallback (every 15s)
+    const interval = setInterval(fetchUnread, 15000);
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [notifUser]);
+
   // Fetch notifications when dropdown opens
   useEffect(() => {
     if (showDropdown && notifUser) {
@@ -179,6 +213,7 @@ export default function Navbar() {
         .then(({ data }) => {
           setNotifications(data || []);
           setNotifLoading(false);
+          setHasUnread(Boolean((data || []).some(n => !n.is_read)));
         });
     }
   }, [showDropdown, notifUser]);
@@ -219,7 +254,7 @@ export default function Navbar() {
         <div style={{ position: 'relative' }}>
           <BellButton onClick={() => setShowDropdown(v => !v)} aria-label="Notifications">
             <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-            {notifications.some(n => !n.is_read) && <BellDot />}
+            {hasUnread && <BellDot />}
           </BellButton>
           {showDropdown && (
             <NotifDropdown ref={dropdownRef}>
