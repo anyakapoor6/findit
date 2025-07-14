@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import { getCurrentUser, signOut } from '../../lib/auth';
 import { getUserProfile, updateUserProfile, getUserPreferences, upsertUserPreferences, UserPreferences } from '../../lib/users';
 import { fetchUserListings } from '../../lib/listings';
-import { Profile, Listing, User } from '../../lib/types';
+import { Profile, Listing, User, NotificationType } from '../../lib/types';
 import ListingCard from '../../components/ListingCard';
 import SignInModal from '../../components/SignInModal';
 import { supabase } from '../../utils/supabaseClient';
@@ -14,6 +14,7 @@ import EditListingModal from '../../components/EditListingModal';
 import { useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import LocationPicker from '../../components/LocationPicker';
+import { sendEmailNotification } from '../../lib/notifications';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -529,6 +530,17 @@ export default function ProfilePage() {
 				: 'Your claim was rejected by the item finder.',
 			listing_id: claim.listing_id,
 			claim_id: claim.id,
+		});
+		// Send email notification to claimant
+		const notificationType: NotificationType = action === 'accepted' ? 'claim_accepted' : 'claim_rejected';
+		await sendEmailNotification({
+			user_id: claim.claimant_id,
+			type: notificationType,
+			message: action === 'accepted'
+				? `Your claim for "${claim.listingTitle}" was accepted! The owner will contact you soon.`
+				: `Your claim for "${claim.listingTitle}" was rejected by the item finder.`,
+			listing_title: claim.listingTitle,
+			claim_status: action,
 		});
 		setMyClaims((prev) => prev.map(c => c.id === claim.id ? { ...c, status: action } : c));
 	};

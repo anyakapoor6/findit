@@ -7,6 +7,8 @@ import { supabase } from '../utils/supabaseClient';
 import { createPortal } from 'react-dom';
 import { uploadListingImage } from '../lib/storage';
 import { FaPencilAlt } from 'react-icons/fa';
+import { sendEmailNotification } from '../lib/notifications';
+import type { NotificationType } from '../lib/types';
 
 interface ListingCardProps {
 	listing: Listing;
@@ -291,7 +293,7 @@ function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () =
 			// Get listing to find owner
 			const { data: listing } = await supabase
 				.from('listings')
-				.select('user_id')
+				.select('user_id, title')
 				.eq('id', listingId)
 				.single();
 			// Insert notification for owner
@@ -299,9 +301,17 @@ function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () =
 				await supabase.from('notifications').insert({
 					user_id: listing.user_id,
 					type: 'claim_submitted',
-					message: 'A new claim was submitted for your found item.',
+					message: `A new claim was submitted for your found item "${listing.title}".`,
 					listing_id: listingId,
 					claim_id: claim.id,
+				});
+				// Send email notification with listing title
+				const notificationType: NotificationType = 'claim_submitted';
+				await sendEmailNotification({
+					user_id: listing.user_id,
+					type: notificationType,
+					message: `A new claim was submitted for your found item "${listing.title}".`,
+					listing_title: listing.title
 				});
 			}
 			setSuccess(true);

@@ -1,5 +1,6 @@
 import { supabase } from '../utils/supabaseClient';
 import type { Match, MatchNotification } from './types';
+import type { NotificationType } from './types';
 import { useState, useEffect } from 'react';
 
 // Web notification hooks and placeholders
@@ -306,4 +307,28 @@ export function useNotificationHistory(userId: string) {
 		loading,
 		markAsRead
 	};
+}
+
+// Utility to send email notification via Supabase Edge Function
+
+export async function sendEmailNotification({
+	user_id,
+	type,
+	message,
+	listing_title,
+	claim_status
+}: {
+	user_id: string;
+	type: NotificationType;
+	message: string;
+	listing_title?: string;
+	claim_status?: string;
+}) {
+	const functionUrl = 'https://jpppsktqnkbfzgegmsfq.functions.supabase.co/send_notification_email';
+
+	await fetch(functionUrl, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ user_id, type, message, listing_title, claim_status }),
+	});
 } 

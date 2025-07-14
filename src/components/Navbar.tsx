@@ -250,6 +250,7 @@ export default function Navbar() {
           <NavLink href="/matches" $variant="default">Matches</NavLink>
           <Spacer />
           <NavLink href="/profile" $variant="default">Profile</NavLink>
+          <NavLink href="/contact" $variant="default">Contact</NavLink>
         </NavLinks>
         {/* Notification Bell */}
         <div style={{ position: 'relative' }}>

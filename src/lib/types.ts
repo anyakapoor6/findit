@@ -94,4 +94,15 @@ export interface MatchNotification {
 	sent_via: 'web' | 'email' | 'sms';
 	sent_at: string;
 	read_at?: string;
-} 
+}
+
+export type NotificationType =
+	| 'claim'
+	| 'match'
+	| 'nearby'
+	| 'claim_update'
+	| 'claim_accepted'
+	| 'claim_rejected'
+	| 'claim_on_listing'
+	| 'claim_submitted'
+	| 'contact'; 

@@ -28,7 +28,7 @@ serve(async (req) => {
 	// Fetch the new listing's location
 	const { data: newListing, error: listingError } = await supabase
 		.from('listings')
-		.select('id, location_lat, location_lng')
+		.select('id, location_lat, location_lng, title')
 		.eq('id', listingId)
 		.single();
 	if (listingError || !newListing || !newListing.location_lat || !newListing.location_lng) {
@@ -50,9 +50,10 @@ serve(async (req) => {
 	const geoNotifications = (usersNearby || []).map((user: any) => ({
 		user_id: user.id,
 		type: 'nearby_listing',
-		message: 'A new lost/found item was posted near you!',
+		message: `A new lost/found item "${newListing.title}" was posted near you!`,
 		listing_id: listingId,
 		is_read: false,
+		listing_title: newListing.title
 	}));
 
 	// Fetch the new matches for this listing, joining to get user IDs
@@ -79,9 +80,10 @@ serve(async (req) => {
 			matchNotifications.push({
 				user_id: match.listing.user_id,
 				type: 'match_found',
-				message: '🎉 We found a match for your listing!',
+				message: `🎉 We found a match for your listing "${match.listing_id}"!`,
 				listing_id: match.listing_id,
 				is_read: false,
+				listing_title: match.listing_id
 			});
 		}
 		// Notification for the owner of the matched listing
@@ -89,9 +91,10 @@ serve(async (req) => {
 			matchNotifications.push({
 				user_id: match.matched_listing.user_id,
 				type: 'match_found',
-				message: '🎉 We found a match for your listing!',
+				message: `🎉 We found a match for your listing "${match.matched_listing_id}"!`,
 				listing_id: match.matched_listing_id,
 				is_read: false,
+				listing_title: match.matched_listing_id
 			});
 		}
 	}
@@ -105,6 +108,23 @@ serve(async (req) => {
 
 		if (notifError) {
 			return new Response(JSON.stringify({ error: notifError.message }), { status: 500 });
+		}
+
+		// Send email notifications for each notification
+		for (const notif of notifications) {
+			// Only send for supported types
+			if (notif.type === 'match_found' || notif.type === 'nearby_listing') {
+				await fetch(`${supabaseUrl}/functions/v1/send_notification_email`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						user_id: notif.user_id,
+						type: notif.type === 'match_found' ? 'match' : 'nearby',
+						message: notif.message,
+						listing_title: notif.listing_title
+					}),
+				});
+			}
 		}
 	}
 
