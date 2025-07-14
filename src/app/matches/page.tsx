@@ -179,6 +179,15 @@ const CreateListingButton = styled.button`
   }
 `;
 
+// Filter out matches for resolved listings and only show matches with the same category
+const filterValidMatches = (matches: Match[]): Match[] => {
+	return matches.filter(m =>
+		m.listing_status !== 'resolved' &&
+		m.matched_listing_status !== 'resolved' &&
+		m.listing_category === m.matched_listing_category
+	);
+}
+
 export default function MatchesPage() {
 	const [user, setUser] = useState<User | null>(null);
 	const [matches, setMatches] = useState<Match[]>([]);
@@ -215,9 +224,20 @@ export default function MatchesPage() {
 					getUserMatches(user.id),
 					getMatchStats(user.id)
 				]);
-
-				setMatches(matchesData);
-				setStats(statsData);
+				console.log('Current user ID:', user.id);
+				console.log('Fetched matches:', matchesData);
+				const filtered = filterValidMatches(matchesData);
+				setMatches(filtered);
+				// Optionally, recalculate stats based on filtered matches
+				setStats({
+					totalMatches: filtered.length,
+					highConfidenceMatches: filtered.filter(m => m.score >= 0.6).length,
+					recentMatches: filtered.filter(m => {
+						const now = new Date();
+						const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+						return new Date(m.listing_created_at) >= sevenDaysAgo;
+					}).length
+				});
 			} catch (error) {
 				console.error('Error fetching matches:', error);
 			}
@@ -359,8 +379,36 @@ export default function MatchesPage() {
 							</div>
 						</MatchHeader>
 						{listingMatches.map((match) => {
-							// Always show the other listing as the match
-							const other = match._other === 'matched' ? {
+							// Always show the user's listing on the left, the match on the right
+							const isUserListingLeft = match.listing_user_id === user.id;
+							const left = isUserListingLeft ? {
+								id: match.listing_id,
+								title: match.listing_title,
+								status: match.listing_status as ListingStatus,
+								item_type: match.listing_category,
+								item_subtype: match.listing_subcategory,
+								location: match.listing_location,
+								created_at: match.listing_created_at,
+								description: match.listing_description || '',
+								user_id: match.listing_user_id,
+								image_url: match.listing_image_url || undefined,
+								date: match.listing_created_at,
+								extra_details: match.listing_extra_details || undefined
+							} : {
+								id: match.matched_listing_id,
+								title: match.matched_listing_title,
+								status: match.matched_listing_status as ListingStatus,
+								item_type: match.matched_listing_category,
+								item_subtype: match.matched_listing_subcategory,
+								location: match.matched_listing_location,
+								created_at: match.matched_listing_created_at,
+								description: match.matched_listing_description || '',
+								user_id: match.matched_listing_user_id,
+								image_url: match.matched_listing_image_url || undefined,
+								date: match.matched_listing_created_at,
+								extra_details: match.matched_listing_extra_details || undefined
+							};
+							const right = isUserListingLeft ? {
 								id: match.matched_listing_id,
 								title: match.matched_listing_title,
 								status: match.matched_listing_status as ListingStatus,
@@ -388,26 +436,29 @@ export default function MatchesPage() {
 								extra_details: match.listing_extra_details || undefined
 							};
 							return (
-								<div key={match.match_id} style={{ marginBottom: '1.5rem' }}>
-									<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-										<MatchScore $score={match.score}>
+								<div key={match.match_id} style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2.5rem' }}>
+									{/* User's listing */}
+									<div style={{ flex: 1, minWidth: 0 }}>
+										<ListingCard listing={left} showActions={false} />
+									</div>
+									{/* Match score and reasons in the center */}
+									<div style={{ flex: '0 0 220px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+										<MatchScore $score={match.score} style={{ fontSize: '1.3rem', marginBottom: 8 }}>
 											<ScoreBar $score={match.score} />
 											{Math.round(match.score * 100)}% Match
 										</MatchScore>
+										{match.match_reasons.length > 0 && (
+											<MatchReasons style={{ justifyContent: 'center' }}>
+												{match.match_reasons.map((reason, index) => (
+													<ReasonTag key={index}>{reason}</ReasonTag>
+												))}
+											</MatchReasons>
+										)}
 									</div>
-									{match.match_reasons.length > 0 && (
-										<MatchReasons>
-											{match.match_reasons.map((reason, index) => (
-												<ReasonTag key={index}>{reason}</ReasonTag>
-											))}
-										</MatchReasons>
-									)}
-									<ListingsGrid>
-										<ListingCard
-											listing={other}
-											showActions={false}
-										/>
-									</ListingsGrid>
+									{/* Matching listing */}
+									<div style={{ flex: 1, minWidth: 0 }}>
+										<ListingCard listing={right} showActions={false} />
+									</div>
 								</div>
 							);
 						})}
