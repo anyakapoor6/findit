@@ -501,6 +501,59 @@ function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClos
 	);
 }
 
+function ShareSheet({ open, onClose, listing }: { open: boolean, onClose: () => void, listing: Listing }) {
+	const [shared, setShared] = useState(false);
+	const shareUrl = typeof window !== 'undefined' ? window.location.origin + `/found/${listing.id}` : '';
+	const shareText = `Help spread the word! This item was just resolved on FindIt: ${listing.title} (${listing.location})`;
+
+	const handleShare = async () => {
+		if (navigator.share) {
+			try {
+				await navigator.share({
+					title: 'FindIt - Resolved Item',
+					text: shareText,
+					url: shareUrl,
+				});
+				setShared(true);
+			} catch { }
+		}
+	};
+
+	const handleCopy = async () => {
+		await navigator.clipboard.writeText(shareUrl);
+		setShared(true);
+	};
+
+	if (!open) return null;
+	return (
+		<div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+			<div style={{ background: '#fff', borderRadius: 16, padding: 32, minWidth: 320, maxWidth: 420, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', color: '#111', position: 'relative' }}>
+				<button onClick={onClose} style={{ position: 'absolute', top: 12, right: 12, background: '#f1f5f9', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', fontWeight: 700 }}>Close</button>
+				<h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 12 }}>Share the Good News!</h2>
+				<div style={{ marginBottom: 16, color: '#2563eb', fontWeight: 600 }}>
+					🎉 Thank you for resolving this listing!<br />
+					<span style={{ color: '#111', fontWeight: 500 }}>
+						Help others by spreading the word—share this with friends, family, or on social media. Word of mouth can help more people find their lost items!
+					</span>
+				</div>
+				<div style={{ marginBottom: 18, fontSize: '1.05rem', color: '#444' }}>
+					"Every share increases the chance of reuniting people with what matters most."
+				</div>
+				{typeof navigator !== 'undefined' && typeof navigator.share === 'function' ? (
+					<button onClick={handleShare} style={{ width: '100%', background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: '1.1rem', border: 'none', borderRadius: 8, padding: '0.9rem 0', cursor: 'pointer', marginBottom: 10 }}>
+						Share Now
+					</button>
+				) : (
+					<button onClick={handleCopy} style={{ width: '100%', background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: '1.1rem', border: 'none', borderRadius: 8, padding: '0.9rem 0', cursor: 'pointer', marginBottom: 10 }}>
+						Copy Share Link
+					</button>
+				)}
+				{shared && <div style={{ color: '#059669', fontWeight: 600, marginTop: 8 }}>Thanks for sharing!</div>}
+			</div>
+		</div>
+	);
+}
+
 export default function ListingCard({
 	listing,
 	onView,
@@ -517,6 +570,7 @@ export default function ListingCard({
 	const [showDetails, setShowDetails] = useState(false);
 	const [resolving, setResolving] = useState(false);
 	const router = useRouter();
+	const [showShareSheet, setShowShareSheet] = useState(false);
 
 	useEffect(() => {
 		async function fetchInitials() {
@@ -579,6 +633,7 @@ export default function ListingCard({
 			return;
 		}
 		if (onStatusChange) onStatusChange();
+		setShowShareSheet(true);
 	};
 
 	return (
@@ -677,6 +732,7 @@ export default function ListingCard({
 				)}
 			</Card>
 			<ListingDetailsModal open={showDetails} onClose={() => setShowDetails(false)} listing={listing} />
+			<ShareSheet open={showShareSheet} onClose={() => setShowShareSheet(false)} listing={listing} />
 		</>
 	);
 } 

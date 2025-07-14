@@ -9,7 +9,6 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import styled from 'styled-components';
 // Removed unused Link import
 import SignInModal from '../../components/SignInModal';
-import { triggerMatchFinding, getMatchesForListing, notifyUsersOfMatch } from '../../lib/matches';
 
 const PageContainer = styled.div`
   min-height: 80vh;
@@ -365,16 +364,11 @@ export default function CreateListingPage() {
 			);
 
 			// --- AI MATCHING & NOTIFICATIONS ---
-			// Trigger match finding (Supabase RPC)
-			await triggerMatchFinding(newListing.id);
-			// Fetch new matches for this listing
-			const matches = await getMatchesForListing(newListing.id);
-			// For each match, send notifications
-			for (const match of matches) {
-				const user1Prefs = await getUserNotificationPrefs(match.listing_user_id);
-				const user2Prefs = await getUserNotificationPrefs(match.matched_listing_user_id);
-				await notifyUsersOfMatch(match, user1Prefs, user2Prefs);
-			}
+			await fetch('/functions/v1/create-matches-for-listing', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ listingId: newListing.id }),
+			});
 			// --- END AI MATCHING & NOTIFICATIONS ---
 
 			router.push('/');
