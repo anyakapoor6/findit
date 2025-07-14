@@ -53,6 +53,7 @@ const Card = styled.div<{ $isLost: boolean; $isResolved: boolean }>`
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   background: ${({ $isLost, $isResolved }) => $isResolved ? '#fce7f3' : $isLost ? '#fef2f2' : '#f0fdf4'};
   border-color: ${({ $isLost, $isResolved }) => $isResolved ? '#fbcfe8' : $isLost ? '#fecaca' : '#bbf7d0'};
   transition: box-shadow 0.2s, transform 0.2s;
@@ -551,6 +552,33 @@ function ShareSheet({ open, onClose, listing }: { open: boolean, onClose: () => 
 	);
 }
 
+function getCategoryColor(type: string) {
+	switch (type) {
+		case 'electronics': return '#2563eb';
+		case 'bags': return '#7c3aed';
+		case 'pets': return '#0ea5e9';
+		case 'keys': return '#f59e42';
+		case 'jewelry': return '#eab308';
+		case 'clothing': return '#10b981';
+		case 'documents': return '#6366f1';
+		case 'toys': return '#f472b6';
+		default: return '#6b7280';
+	}
+}
+function getCategoryBg(type: string) {
+	switch (type) {
+		case 'electronics': return '#dbeafe';
+		case 'bags': return '#ede9fe';
+		case 'pets': return '#cffafe';
+		case 'keys': return '#fef3c7';
+		case 'jewelry': return '#fef9c3';
+		case 'clothing': return '#d1fae5';
+		case 'documents': return '#e0e7ff';
+		case 'toys': return '#fce7f3';
+		default: return '#f3f4f6';
+	}
+}
+
 export default function ListingCard({
 	listing,
 	onView,
@@ -568,6 +596,8 @@ export default function ListingCard({
 	const [resolving, setResolving] = useState(false);
 	const router = useRouter();
 	const [showShareSheet, setShowShareSheet] = useState(false);
+	const [showFullLocation, setShowFullLocation] = useState(false);
+	const condensedLocation = listing.location?.split(',')[0] || '';
 
 	useEffect(() => {
 		async function fetchInitials() {
@@ -634,102 +664,122 @@ export default function ListingCard({
 	};
 
 	return (
-		<>
-			<Card $isLost={isLost} $isResolved={isResolved} onClick={() => setShowDetails(true)}>
+		<Card $isLost={listing.status === 'lost'} $isResolved={listing.status === 'resolved'}>
+			{/* Image */}
+			<ImageBox style={{ marginBottom: '1rem' }}>
 				{listing.image_url ? (
-					<ImageBox>
-						<CardImage src={listing.image_url} alt={listing.title} />
-					</ImageBox>
+					<CardImage src={listing.image_url} alt={listing.title} />
 				) : (
-					<Placeholder title="No image provided">
-						<svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 16h.01M16 12h.01" /></svg>
-						<PlaceholderText>No image</PlaceholderText>
-					</Placeholder>
+					<Placeholder>📦</Placeholder>
 				)}
-				<InitialsBox title="Listing owner initials">{initials}</InitialsBox>
-				<CardHeader>
-					<TitleTagsRow>
-						<Title title={listing.title}>{listing.title}</Title>
-						<TagRow style={{ margin: 0 }}>
-							{listing.item_type && (
-								<Tag $type={listing.item_type || 'other'}>{listing.item_type.charAt(0).toUpperCase() + listing.item_type.slice(1)}</Tag>
-							)}
-							{listing.item_subtype && (
-								<Tag $type={listing.item_type || 'other'}>{listing.item_subtype.charAt(0).toUpperCase() + listing.item_subtype.slice(1)}</Tag>
-							)}
-						</TagRow>
-					</TitleTagsRow>
-					<Status $isLost={isLost} $isResolved={isResolved}>{listing.status.toUpperCase()}</Status>
-				</CardHeader>
-				<Description>{listing.description}</Description>
-				<Info>
-					<InfoRow>
-						<InfoLabel>Location:</InfoLabel>
-						<InfoValue title={listing.location}>{listing.location}</InfoValue>
-					</InfoRow>
-					<InfoRow>
-						<InfoLabel>Date:</InfoLabel>
-						<InfoValue>{formatDateUS(listing.date)}</InfoValue>
-					</InfoRow>
-				</Info>
-				{/* Claim button for found listings, only for signed-in users who are not the owner, now directly below the date */}
-				{listing.status === 'found' && user && user.id !== listing.user_id && (
-					<ClaimButton onClick={e => { e.stopPropagation(); setShowClaimModal(true); }}>
-						I think this is mine
-					</ClaimButton>
-				)}
-				{/* Mark as Resolved button for creator if active, at the bottom of the card */}
-				{canResolve && (
-					<button
-						onClick={handleResolve}
-						disabled={resolving}
-						style={{
-							marginTop: 16,
-							width: '100%',
-							background: '#f472b6',
-							color: '#fff',
-							fontWeight: 700,
-							fontSize: '1.1rem',
-							border: 'none',
-							borderRadius: 8,
-							padding: '0.9rem 0',
-							cursor: 'pointer',
-							boxShadow: '0 2px 8px rgba(245,114,182,0.10)',
-							transition: 'background 0.18s, box-shadow 0.18s',
-							opacity: resolving ? 0.7 : 1
-						}}
-					>
-						{resolving ? 'Marking as Resolved...' : 'Mark as Resolved'}
-					</button>
-				)}
-				{onEdit && (
-					<EditIconButton title="Edit Listing" onClick={e => { e.stopPropagation(); onEdit(listing); }}>
-						<FaPencilAlt />
-					</EditIconButton>
-				)}
-				<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
-				{showActions && (
-					<Actions>
-						{onView && (
-							<ActionButton className="view" onClick={e => { e.stopPropagation(); onView(listing); }}>
-								View Details
-							</ActionButton>
+			</ImageBox>
+			{/* Title and Tags */}
+			<CardHeader style={{ flexDirection: 'column', alignItems: 'flex-start', marginBottom: 0, minHeight: 70 }}>
+				<Title>{listing.title}</Title>
+				<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', margin: '0.5rem 0 0.2rem 0', alignItems: 'center' }}>
+					{listing.item_type && (
+						<span style={{ background: getCategoryBg(listing.item_type), color: getCategoryColor(listing.item_type), fontWeight: 700, borderRadius: 8, padding: '0.2rem 0.7rem', fontSize: '0.95rem' }}>{listing.item_type.charAt(0).toUpperCase() + listing.item_type.slice(1)}</span>
+					)}
+					{listing.item_subtype && (
+						<span style={{ background: '#fce7f3', color: '#be185d', fontWeight: 700, borderRadius: 8, padding: '0.2rem 0.7rem', fontSize: '0.95rem' }}>{listing.item_subtype}</span>
+					)}
+					<Status $isLost={listing.status === 'lost'} $isResolved={listing.status === 'resolved'}>{listing.status.toUpperCase()}</Status>
+				</div>
+			</CardHeader>
+			{/* Description */}
+			<Description style={{ minHeight: 40, marginBottom: 0 }}>{listing.description}</Description>
+			{/* Condensed Location with Show More */}
+			<Info style={{ marginBottom: 0, minHeight: 60 }}>
+				<InfoRow>
+					<InfoLabel>Location:</InfoLabel>
+					<InfoValue>
+						{showFullLocation ? (
+							<>
+								{listing.location}
+								{listing.location && (
+									<span
+										style={{ color: '#2563eb', marginLeft: 8, cursor: 'pointer', fontWeight: 500, fontSize: '0.97rem' }}
+										onClick={() => setShowFullLocation(false)}
+									>
+										Show less
+									</span>
+								)}
+							</>
+						) : (
+							<>
+								{condensedLocation}
+								{listing.location && listing.location.length > condensedLocation.length && (
+									<span
+										style={{ color: '#2563eb', marginLeft: 8, cursor: 'pointer', fontWeight: 500, fontSize: '0.97rem' }}
+										onClick={() => setShowFullLocation(true)}
+									>
+										Show more
+									</span>
+								)}
+							</>
 						)}
-						{onEdit && (
-							<ActionButton className="edit" onClick={e => { e.stopPropagation(); onEdit(listing); }}>
-								Edit
-							</ActionButton>
-						)}
-						{onDelete && (
-							<ActionButton className="delete" onClick={e => { e.stopPropagation(); onDelete(listing); }}>
-								Delete
-							</ActionButton>
-						)}
-					</Actions>
-				)}
-			</Card>
-			<ListingDetailsModal open={showDetails} onClose={() => setShowDetails(false)} listing={listing} />
-			<ShareSheet open={showShareSheet} onClose={() => setShowShareSheet(false)} listing={listing} />
-		</>
+					</InfoValue>
+				</InfoRow>
+				<InfoRow>
+					<InfoLabel>Date:</InfoLabel>
+					<InfoValue>{listing.date ? new Date(listing.date).toLocaleDateString() : ''}</InfoValue>
+				</InfoRow>
+			</Info>
+			{/* Claim button for found listings, only for signed-in users who are not the owner, now directly below the date */}
+			{listing.status === 'found' && user && user.id !== listing.user_id && (
+				<ClaimButton onClick={e => { e.stopPropagation(); setShowClaimModal(true); }}>
+					I think this is mine
+				</ClaimButton>
+			)}
+			{/* Mark as Resolved button for creator if active, at the bottom of the card */}
+			{canResolve && (
+				<button
+					onClick={handleResolve}
+					disabled={resolving}
+					style={{
+						marginTop: 16,
+						width: '100%',
+						background: '#f472b6',
+						color: '#fff',
+						fontWeight: 700,
+						fontSize: '1.1rem',
+						border: 'none',
+						borderRadius: 8,
+						padding: '0.9rem 0',
+						cursor: 'pointer',
+						boxShadow: '0 2px 8px rgba(245,114,182,0.10)',
+						transition: 'background 0.18s, box-shadow 0.18s',
+						opacity: resolving ? 0.7 : 1
+					}}
+				>
+					{resolving ? 'Marking as Resolved...' : 'Mark as Resolved'}
+				</button>
+			)}
+			{onEdit && (
+				<EditIconButton title="Edit Listing" onClick={e => { e.stopPropagation(); onEdit(listing); }}>
+					<FaPencilAlt />
+				</EditIconButton>
+			)}
+			<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
+			{showActions && (
+				<Actions>
+					{onView && (
+						<ActionButton className="view" onClick={e => { e.stopPropagation(); onView(listing); }}>
+							View Details
+						</ActionButton>
+					)}
+					{onEdit && (
+						<ActionButton className="edit" onClick={e => { e.stopPropagation(); onEdit(listing); }}>
+							Edit
+						</ActionButton>
+					)}
+					{onDelete && (
+						<ActionButton className="delete" onClick={e => { e.stopPropagation(); onDelete(listing); }}>
+							Delete
+						</ActionButton>
+					)}
+				</Actions>
+			)}
+		</Card>
 	);
 } 

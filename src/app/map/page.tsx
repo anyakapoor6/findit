@@ -6,6 +6,8 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import styled from 'styled-components';
 import Link from 'next/link';
 import { loadGoogleMapsScript } from '../../utils/loadGoogleMapsScript';
+import pinRed from '../../../public/pin-red.svg';
+import pinGreen from '../../../public/pin-green.svg';
 
 const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -194,12 +196,9 @@ export default function MapPage() {
 					map: gmap,
 					title: listing.title,
 					icon: {
-						path: google.maps.SymbolPath.CIRCLE,
-						scale: 8,
-						fillColor: listing.status === 'lost' ? '#dc2626' : '#16a34a',
-						fillOpacity: 1,
-						strokeColor: '#ffffff',
-						strokeWeight: 2,
+						url: listing.status === 'lost' ? '/pin-red.svg' : '/pin-green.svg',
+						scaledSize: new google.maps.Size(36, 36),
+						anchor: new google.maps.Point(18, 32),
 					},
 				});
 
@@ -209,7 +208,7 @@ export default function MapPage() {
           <h3 style="font-size: 1.1rem; font-weight: 600; color: #111; margin-bottom: 0.5rem;">${listing.title}</h3>
           ${listing.image_url ? `<img src="${listing.image_url}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 0.5rem; margin-bottom: 0.75rem;" alt="${listing.title}" />` : ''}
           <p style="font-size: 0.9rem; color: #666; margin-bottom: 0.75rem; line-height: 1.4;">${listing.description}</p>
-          <a href="/listing/${listing.id}" style="display: inline-block; background: #2563eb; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.9rem; font-weight: 600;">View Details</a>
+          <a href="/?listingId=${listing.id}" style="display: inline-block; background: #2563eb; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-size: 0.9rem; font-weight: 600;">View Details</a>
         </div>
       `;
 
@@ -264,11 +263,11 @@ export default function MapPage() {
 				<Legend>
 					<LegendItem>
 						<LegendDot $color="#dc2626" />
-						<span>Lost Items ({lostCount})</span>
+						<span>Lost Items</span>
 					</LegendItem>
 					<LegendItem>
 						<LegendDot $color="#16a34a" />
-						<span>Found Items ({foundCount})</span>
+						<span>Found Items</span>
 					</LegendItem>
 				</Legend>
 			</Header>

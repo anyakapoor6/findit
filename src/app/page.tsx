@@ -122,6 +122,9 @@ export default function Home() {
   const userRef = useRef<User | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const highlightedId = searchParams?.get('listingId');
+  const highlightedRef = useRef<HTMLDivElement | null>(null);
+  const [showHighlight, setShowHighlight] = useState(true);
 
   // Sync filter state with URL
   useEffect(() => {
@@ -196,6 +199,17 @@ export default function Home() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [userChecked]);
+
+  useEffect(() => {
+    if (highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    if (highlightedId) {
+      setShowHighlight(true);
+      const timer = setTimeout(() => setShowHighlight(false), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedId]);
 
   const handleSignInSuccess = () => {
     setShowSignIn(false);
@@ -321,9 +335,18 @@ export default function Home() {
             </div>
           ) : filteredListings.length > 0 ? (
             <ListingsGrid>
-              {filteredListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
+              {filteredListings.map((listing) => {
+                const isHighlighted = listing.id === highlightedId && showHighlight;
+                return (
+                  <div
+                    key={listing.id}
+                    ref={isHighlighted ? highlightedRef : undefined}
+                    style={isHighlighted ? { boxShadow: '0 0 0 4px #2563eb, 0 4px 16px rgba(0,0,0,0.08)', borderRadius: '1.25rem', transition: 'box-shadow 0.3s' } : {}}
+                  >
+                    <ListingCard listing={listing} />
+                  </div>
+                );
+              })}
             </ListingsGrid>
           ) : (
             <div style={{ textAlign: 'center', padding: '3rem 0', background: '#fff', borderRadius: '0.5rem', border: '1px solid #eee' }}>
