@@ -13,6 +13,7 @@ import { supabase } from '../../utils/supabaseClient';
 import EditListingModal from '../../components/EditListingModal';
 import { useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import LocationPicker from '../../components/LocationPicker';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -254,6 +255,11 @@ export default function ProfilePage() {
 	const [prefs, setPrefs] = useState<UserPreferences | null>(null);
 	const [prefsLoading, setPrefsLoading] = useState(true);
 	const [prefsError, setPrefsError] = useState('');
+	const [notifyNearby, setNotifyNearby] = useState(true);
+	const [notifyClaims, setNotifyClaims] = useState(true);
+	const [notifyMatches, setNotifyMatches] = useState(true);
+	const [locationData, setLocationData] = useState<{ address: string; lat: number | undefined; lng: number | undefined }>({ address: '', lat: undefined, lng: undefined });
+	const [savingPrefs, setSavingPrefs] = useState(false);
 	const fetchFinderProfile = useCallback(async (userId: string) => {
 		if (finderProfiles[userId]) return finderProfiles[userId];
 		const profile = await getUserProfile(userId);
@@ -277,6 +283,19 @@ export default function ProfilePage() {
 			setPrefsLoading(false);
 		});
 	}, [user]);
+
+	useEffect(() => {
+		if (profile) {
+			setNotifyNearby(profile.notify_nearby !== false); // default true
+			setNotifyClaims(profile.notify_claims !== false); // default true
+			setNotifyMatches(profile.notify_matches !== false); // default true
+			setLocationData({
+				address: profile.location_address || '',
+				lat: profile.location_lat,
+				lng: profile.location_lng,
+			});
+		}
+	}, [profile]);
 
 	const handleEditListing = (listing: Listing) => {
 		setEditingListing(listing);
@@ -544,6 +563,23 @@ export default function ProfilePage() {
 		}
 	};
 
+	const handleSaveLocationPrefs = async () => {
+		setSavingPrefs(true);
+		const updates: any = {
+			id: user?.id,
+			notify_nearby: notifyNearby,
+			notify_claims: notifyClaims,
+			notify_matches: notifyMatches,
+			location_lat: locationData.lat,
+			location_lng: locationData.lng,
+			location_address: locationData.address,
+		};
+		const { error } = await supabase.from('users').update(updates).eq('id', user?.id);
+		setSavingPrefs(false);
+		if (!error) setMessage('Preferences updated!');
+		else setMessage('Failed to update preferences.');
+	};
+
 	if (loading && mounted) {
 		return (
 			<Container>
@@ -764,6 +800,52 @@ export default function ProfilePage() {
 						<div style={{ color: '#888', fontSize: '0.97rem', marginTop: 4 }}>
 							At least one contact method must be enabled so people can reach you when claims are accepted.
 						</div>
+					</ProfileCard>
+
+					<ProfileCard>
+						<SectionTitle>Notification Preferences</SectionTitle>
+						<ToggleSwitch $checked={notifyNearby}>
+							<input
+								type="checkbox"
+								checked={notifyNearby}
+								onChange={e => setNotifyNearby(e.target.checked)}
+							/>
+							Notify me about new lost/found items near my location
+						</ToggleSwitch>
+						<ToggleSwitch $checked={notifyMatches}>
+							<input
+								type="checkbox"
+								checked={notifyMatches}
+								onChange={e => setNotifyMatches(e.target.checked)}
+							/>
+							Notify me about AI matches for my listings
+						</ToggleSwitch>
+						<ToggleSwitch $checked={notifyClaims}>
+							<input
+								type="checkbox"
+								checked={notifyClaims}
+								onChange={e => setNotifyClaims(e.target.checked)}
+							/>
+							Notify me about claims on my listings
+						</ToggleSwitch>
+						{notifyNearby && (
+							<div style={{ marginBottom: 16 }}>
+								<LocationPicker
+									value={locationData}
+									onChange={setLocationData}
+									label="Your Location"
+									required={false}
+								/>
+								{(!locationData.lat || !locationData.lng) && (
+									<div style={{ color: '#dc2626', fontSize: '0.98rem', marginTop: 4 }}>
+										Please set your location to receive nearby notifications.
+									</div>
+								)}
+							</div>
+						)}
+						<Button onClick={handleSaveLocationPrefs} disabled={savingPrefs}>
+							{savingPrefs ? 'Saving...' : 'Save Preferences'}
+						</Button>
 					</ProfileCard>
 
 					<ProfileCard>

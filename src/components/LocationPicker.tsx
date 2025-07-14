@@ -141,7 +141,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange, label 
 				</button>
 			</div>
 			<div ref={mapRef} style={{ width: '100%', height: 220, borderRadius: 10, border: '1px solid #dbeafe' }} />
-			{value.lat !== undefined && value.lng !== undefined && (
+			{typeof value.lat === 'number' && typeof value.lng === 'number' && (
 				<div style={{ fontSize: 13, color: '#666', marginTop: 6 }}>
 					Selected: {value.address} ({value.lat.toFixed(5)}, {value.lng.toFixed(5)})
 				</div>

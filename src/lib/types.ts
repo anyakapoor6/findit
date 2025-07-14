@@ -43,6 +43,12 @@ export interface Profile {
 	created_at: string;
 	updated_at: string;
 	phone_number?: string;
+	notify_nearby?: boolean;
+	notify_claims?: boolean;
+	notify_matches?: boolean;
+	location_address?: string;
+	location_lat?: number;
+	location_lng?: number;
 }
 
 export interface AuthState {
