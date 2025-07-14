@@ -6,6 +6,8 @@ export interface Listing {
 	description: string;
 	status: ListingStatus;
 	location: string;
+	location_lat?: number;
+	location_lng?: number;
 	date: string; // ISO string
 	image_url?: string;
 	user_id: string;
@@ -20,6 +22,8 @@ export interface CreateListingData {
 	description: string;
 	status: ListingStatus;
 	location: string;
+	location_lat?: number;
+	location_lng?: number;
 	date: string;
 	image_url?: string;
 	item_type?: string;

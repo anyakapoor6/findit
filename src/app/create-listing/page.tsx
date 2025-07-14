@@ -9,6 +9,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import styled from 'styled-components';
 // Removed unused Link import
 import SignInModal from '../../components/SignInModal';
+import LocationPicker from '../../components/LocationPicker';
 
 const PageContainer = styled.div`
   min-height: 80vh;
@@ -173,6 +174,7 @@ export default function CreateListingPage() {
 		date: new Date().toISOString().split('T')[0],
 		image_url: ''
 	});
+	const [locationData, setLocationData] = useState<{ address: string; lat: number | undefined; lng: number | undefined }>({ address: '', lat: undefined, lng: undefined });
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [imagePreview, setImagePreview] = useState<string>('');
 	const [loading, setLoading] = useState(false);
@@ -337,8 +339,11 @@ export default function CreateListingPage() {
 		setError('');
 
 		try {
-			if (!formData.item_type || !formData.title.trim() || !formData.description.trim() || !formData.location.trim() || !formData.date) {
+			if (!formData.item_type || !formData.title.trim() || !formData.description.trim() || !locationData.address.trim() || !formData.date) {
 				throw new Error('Please fill in all required fields');
+			}
+			if (locationData.lat === undefined || locationData.lng === undefined) {
+				throw new Error('Please select a valid location on the map.');
 			}
 			if (formData.status === 'found' && !selectedFile) {
 				throw new Error('A photo is required for found items.');
@@ -351,6 +356,9 @@ export default function CreateListingPage() {
 
 			const listingData = {
 				...formData,
+				location: locationData.address,
+				location_lat: locationData.lat,
+				location_lng: locationData.lng,
 				image_url: imageUrl,
 				extra_details: Object.keys(extraFields).length > 0 ? extraFields : null
 			};
@@ -480,13 +488,10 @@ export default function CreateListingPage() {
 					</div>
 					{/* Location */}
 					<div>
-						<Label>Location *</Label>
-						<StyledInput
-							type="text"
-							name="location"
-							value={formData.location}
-							onChange={handleInputChange}
-							placeholder="Where the item was lost/found"
+						<LocationPicker
+							value={locationData}
+							onChange={setLocationData}
+							label="Location *"
 							required
 						/>
 					</div>
