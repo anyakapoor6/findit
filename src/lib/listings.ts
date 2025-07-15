@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '../utils/supabaseClient';
 import type { Listing, CreateListingData } from './types';
+import { triggerMatchFinding } from './matches';
 
 // Fetch all listings
 export async function fetchListings(): Promise<Listing[]> {
@@ -52,6 +53,16 @@ export async function addListing(listingData: CreateListingData): Promise<Listin
 		.single();
 
 	if (error) throw error;
+
+	// Trigger AI matching for the new listing
+	try {
+		await triggerMatchFinding(data.id);
+		console.log('AI matching triggered for listing:', data.id);
+	} catch (matchError) {
+		console.error('Error triggering AI matching:', matchError);
+		// Don't fail the listing creation if matching fails
+	}
+
 	return data as Listing;
 }
 

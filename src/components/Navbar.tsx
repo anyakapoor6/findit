@@ -137,10 +137,27 @@ const NotifItem = styled.div<{ $unread?: boolean }>`
   font-weight: ${({ $unread }) => $unread ? 700 : 500};
   cursor: pointer;
   display: flex;
-  align-items: center;
-  gap: 0.7rem;
+  flex-direction: column;
+  gap: 0.3rem;
   &:last-child { border-bottom: none; }
   &:hover { background: #e0e7ef; }
+`;
+
+const NotifContent = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+`;
+
+const NotifText = styled.div`
+  flex: 1;
+  line-height: 1.4;
+`;
+
+const NotifTime = styled.div`
+  font-size: 0.8rem;
+  color: #888;
+  font-weight: 400;
 `;
 const NotifDot = styled.span`
   width: 8px;
@@ -266,20 +283,20 @@ export default function Navbar() {
       // Initial fetch for unread
       const fetchUnread = async () => {
         const { data } = await supabase
-          .from('notifications')
+          .from('match_notifications')
           .select('id')
           .eq('user_id', notifUser.id)
-          .eq('is_read', false)
+          .is('read_at', null)
           .limit(1);
         setHasUnread(Boolean(data && data.length > 0));
       };
       fetchUnread();
       // Subscribe to new notifications
       const channel = supabase
-        .channel('public:notifications')
+        .channel('public:match_notifications')
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${notifUser.id}` },
+          { event: 'INSERT', schema: 'public', table: 'match_notifications', filter: `user_id=eq.${notifUser.id}` },
           (payload) => {
             setHasUnread(true);
           }
@@ -301,14 +318,24 @@ export default function Navbar() {
     if (showDropdown && notifUser) {
       setNotifLoading(true);
       supabase
-        .from('notifications')
-        .select('*')
+        .from('match_notifications')
+        .select(`
+          id,
+          notification_type,
+          sent_via,
+          sent_at,
+          read_at,
+          listing_id,
+          matched_listing_id,
+          match_id
+        `)
         .eq('user_id', notifUser.id)
-        .order('created_at', { ascending: false })
+        .order('sent_at', { ascending: false })
+        .limit(20)
         .then(({ data }) => {
           setNotifications(data || []);
           setNotifLoading(false);
-          setHasUnread(Boolean((data || []).some(n => !n.is_read)));
+          setHasUnread(Boolean((data || []).some(n => !n.read_at)));
         });
     }
   }, [showDropdown, notifUser, isClient]);
@@ -330,8 +357,35 @@ export default function Navbar() {
 
   // Mark notification as read
   const markAsRead = async (notifId: string) => {
-    setNotifications((prev) => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
-    await supabase.from('notifications').update({ is_read: true }).eq('id', notifId);
+    setNotifications((prev) => prev.map(n => n.id === notifId ? { ...n, read_at: new Date().toISOString() } : n));
+    await supabase.from('match_notifications').update({ read_at: new Date().toISOString() }).eq('id', notifId);
+  };
+
+  // Get notification message based on type
+  const getNotificationMessage = (notification: any) => {
+    switch (notification.notification_type) {
+      case 'match_found':
+        return '🎯 New match found for your listing!';
+      case 'match_updated':
+        return '📝 A match for your listing has been updated.';
+      default:
+        return '🔔 You have a new notification.';
+    }
+  };
+
+  // Format notification time
+  const formatNotificationTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 1) {
+      return 'Just now';
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
   };
 
   // FIXED: Helper function to check if a link is active
@@ -431,23 +485,24 @@ export default function Navbar() {
               ) : notifications.map(n => (
                 <NotifItem
                   key={n.id}
-                  $unread={!n.is_read}
+                  $unread={!n.read_at}
                   onClick={async () => {
                     markAsRead(n.id);
-                    if (n.type === 'claim_on_listing' || n.type === 'claim_submitted') {
-                      router.push('/profile?tab=claims');
-                    } else if (n.type === 'claim_update' || n.type === 'claim_accepted' || n.type === 'claim_rejected') {
-                      router.push('/profile?tab=userClaims');
+                    if (n.notification_type === 'match_found' || n.notification_type === 'match_updated') {
+                      router.push('/matches');
                     }
                   }}
                 >
-                  {!n.is_read && <NotifDot />}
-                  <span>
-                    {n.message}
-                    {n.listing_id && !n.message.includes('listing') && (
-                      <NotifListingTitle listingId={n.listing_id} />
-                    )}
-                  </span>
+                  {!n.read_at && <NotifDot />}
+                  <NotifContent>
+                    <NotifText>
+                      {getNotificationMessage(n)}
+                      {n.listing_id && !getNotificationMessage(n).includes('listing') && (
+                        <NotifListingTitle listingId={n.listing_id} />
+                      )}
+                    </NotifText>
+                    <NotifTime>{formatNotificationTime(n.sent_at)}</NotifTime>
+                  </NotifContent>
                 </NotifItem>
               ))}
             </NotifDropdown>

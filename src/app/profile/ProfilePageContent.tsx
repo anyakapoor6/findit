@@ -13,6 +13,8 @@ import { createSupabaseClient } from '../../utils/supabaseClient';
 import EditListingModal from '../../components/EditListingModal';
 import LocationPicker from '../../components/LocationPicker';
 import { sendEmailNotification } from '../../lib/notifications';
+import NotificationPreferences from '../../components/NotificationPreferences';
+import NotificationHistory from '../../components/NotificationHistory';
 
 const Container = styled.div`
   max-width: 1200px;

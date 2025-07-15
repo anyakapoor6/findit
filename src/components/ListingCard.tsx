@@ -22,7 +22,7 @@ interface ListingCardProps {
 }
 
 const CARD_WIDTH = '300px';
-const CARD_HEIGHT = '470px';
+const CARD_HEIGHT = '520px'; // FIXED: Increased for better visual balance
 
 // FIXED: Helper function to get emoji for category and subcategory
 function getEmojiForCategory(category?: string, subcategory?: string): string {
@@ -146,10 +146,10 @@ const Card = styled.div<{ $isLost: boolean; $isResolved: boolean }>`
   }
 `;
 
-// FIXED: Updated placeholder styling with proper centering and spacing
+// FIXED: Updated placeholder styling with increased height and better visual balance
 const Placeholder = styled.div`
-  width: 180px;
-  height: 180px;
+  width: 100%;
+  height: 220px;
   margin: 0 auto 2rem auto;
   display: flex;
   flex-direction: column;
@@ -161,6 +161,7 @@ const Placeholder = styled.div`
   background: #f1f1f1;
   color: #9ca3af;
   position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 `;
 
 const PlaceholderEmoji = styled.span`
@@ -176,9 +177,10 @@ const PlaceholderText = styled.div`
   font-weight: 500;
 `;
 
+// FIXED: Updated image container with increased height
 const ImageBox = styled.div`
-  width: 180px;
-  height: 180px;
+  width: 100%;
+  height: 220px;
   margin: 0 auto 2rem auto;
   overflow: hidden;
   border-radius: 1rem;
@@ -188,7 +190,9 @@ const ImageBox = styled.div`
   align-items: center;
   justify-content: center;
   background: #fff;
+  cursor: pointer;
 `;
+
 const CardImage = styled.img`
   width: 100%;
   height: 100%;
@@ -217,6 +221,7 @@ const Title = styled.h3`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
 `;
 
 const Status = styled.span<{ $isLost: boolean; $isResolved: boolean }>`
@@ -268,6 +273,9 @@ const InfoRow = styled.div`
 const InfoLabel = styled.span`
   font-weight: 700;
   color: #111;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 `;
 
 const InfoValue = styled.span`
@@ -303,13 +311,30 @@ const ActionButton = styled.button`
 // FIXED: Updated tag styling for better alignment and responsiveness
 const TagRow = styled.div`
   display: flex;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
+  gap: 0.3rem;
+  row-gap: 0.25rem;
+  margin: 0.5rem 0 0.8rem 0;
   flex-wrap: wrap;
   align-items: center;
 `;
 
-// Color mappings for category and subcategory tags
+const Tag = styled.span<{ $type: string }>`
+  display: inline-block;
+  padding: 0.28em 0.95em;
+  border-radius: 1.2em;
+  font-size: 0.98rem;
+  font-weight: 600;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: ${({ $type }) => getTagColors($type).bg};
+  color: ${({ $type }) => getTagColors($type).color};
+  border: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+`;
+
+// FIXED: Color mappings for category and subcategory tags with improved contrast
 const TAG_COLORS: Record<string, { bg: string; color: string }> = {
 	electronics: { bg: '#e0f2fe', color: '#0369a1' },
 	phone: { bg: '#dbeafe', color: '#2563eb' },
@@ -352,17 +377,6 @@ function getTagColors(type?: string) {
 	const key = type.toLowerCase();
 	return TAG_COLORS[key] || TAG_COLORS.other;
 }
-
-const Tag = styled.span<{ $type: string }>`
-  display: inline-block;
-  padding: 0.28em 0.95em;
-  border-radius: 1.2em;
-  font-size: 0.98rem;
-  font-weight: 600;
-  background: ${({ $type }) => getTagColors($type).bg};
-  color: ${({ $type }) => getTagColors($type).color};
-  border: none;
-`;
 
 // Placeholder for ClaimModal (to be implemented)
 function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () => void, listingId: string }) {
@@ -774,9 +788,13 @@ export default function ListingCard({
 	};
 
 	return (
-		<Card $isLost={listing.status === 'lost'} $isResolved={listing.status === 'resolved'}>
-			{/* Image */}
-			<ImageBox style={{ marginBottom: '1rem' }}>
+		<Card
+			$isLost={listing.status === 'lost'}
+			$isResolved={listing.status === 'resolved'}
+			onClick={() => setShowDetails(true)}
+		>
+			{/* FIXED: Clickable image area */}
+			<ImageBox onClick={(e) => { e.stopPropagation(); setShowDetails(true); }}>
 				{listing.image_url ? (
 					<CardImage src={listing.image_url} alt={listing.title} />
 				) : (
@@ -791,7 +809,7 @@ export default function ListingCard({
 			{/* FIXED: Title and Status badge in same row */}
 			<CardHeader>
 				<TitleSection>
-					<Title>{listing.title}</Title>
+					<Title onClick={(e) => { e.stopPropagation(); setShowDetails(true); }}>{listing.title}</Title>
 					{/* FIXED: Tags below title with proper spacing */}
 					<TagRow>
 						{listing.item_type && (
@@ -812,10 +830,12 @@ export default function ListingCard({
 			</CardHeader>
 			{/* Description */}
 			<Description>{listing.description}</Description>
-			{/* Condensed Location with Show More */}
+			{/* FIXED: Condensed Location with Show More and icons */}
 			<Info>
 				<InfoRow>
-					<InfoLabel>Location:</InfoLabel>
+					<InfoLabel>
+						📍 Location:
+					</InfoLabel>
 					<InfoValue>
 						{showFullLocation ? (
 							<>
@@ -823,7 +843,7 @@ export default function ListingCard({
 								{listing.location && (
 									<span
 										style={{ color: '#2563eb', marginLeft: 8, cursor: 'pointer', fontWeight: 500, fontSize: '0.97rem' }}
-										onClick={() => setShowFullLocation(false)}
+										onClick={(e) => { e.stopPropagation(); setShowFullLocation(false); }}
 									>
 										Show less
 									</span>
@@ -835,7 +855,7 @@ export default function ListingCard({
 								{listing.location && listing.location.length > condensedLocation.length && (
 									<span
 										style={{ color: '#2563eb', marginLeft: 8, cursor: 'pointer', fontWeight: 500, fontSize: '0.97rem' }}
-										onClick={() => setShowFullLocation(true)}
+										onClick={(e) => { e.stopPropagation(); setShowFullLocation(true); }}
 									>
 										Show more
 									</span>
@@ -845,7 +865,9 @@ export default function ListingCard({
 					</InfoValue>
 				</InfoRow>
 				<InfoRow>
-					<InfoLabel>Date:</InfoLabel>
+					<InfoLabel>
+						📅 Date:
+					</InfoLabel>
 					<InfoValue>{listing.date ? new Date(listing.date).toLocaleDateString() : ''}</InfoValue>
 				</InfoRow>
 			</Info>
@@ -886,7 +908,12 @@ export default function ListingCard({
 			)}
 			{/* FIXED: Added initials avatar icon */}
 			<InitialsBox>{initials}</InitialsBox>
+
+			{/* FIXED: Added missing modals */}
 			<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
+			<ListingDetailsModal open={showDetails} onClose={() => setShowDetails(false)} listing={listing} />
+			<ShareSheet open={showShareSheet} onClose={() => setShowShareSheet(false)} listing={listing} />
+
 			{showActions && (
 				<Actions>
 					{onView && (

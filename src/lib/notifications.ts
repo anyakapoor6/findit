@@ -2,7 +2,6 @@ import { createSupabaseClient } from '../utils/supabaseClient';
 const supabase = createSupabaseClient();
 import type { Match, MatchNotification } from './types';
 import type { NotificationType } from './types';
-import { useState, useEffect } from 'react';
 
 // Web notification hooks and placeholders
 export class WebNotificationService {
@@ -93,7 +92,7 @@ export class EmailNotificationService {
 			// Store notification record
 			await this.storeNotificationRecord({
 				id: crypto.randomUUID(),
-				user_id: match.listing_id, // This should be the user ID, not listing ID
+				user_id: match.listing_user_id, // Fixed: Use the correct user ID
 				match_id: match.match_id,
 				listing_id: match.listing_id,
 				matched_listing_id: match.matched_listing_id,
@@ -151,7 +150,7 @@ export class SMSNotificationService {
 			// Store notification record
 			await this.storeNotificationRecord({
 				id: crypto.randomUUID(),
-				user_id: match.listing_id, // This should be the user ID, not listing ID
+				user_id: match.listing_user_id, // Fixed: Use the correct user ID
 				match_id: match.match_id,
 				listing_id: match.listing_id,
 				matched_listing_id: match.matched_listing_id,
@@ -217,101 +216,7 @@ export class NotificationOrchestrator {
 	}
 }
 
-// Hook for managing notification preferences
-export function useNotificationPreferences(userId: string) {
-	const [preferences, setPreferences] = useState({
-		webNotifications: true,
-		emailNotifications: false,
-		smsNotifications: false
-	});
-
-	const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		const loadPreferences = async () => {
-			try {
-				// TODO: Load user notification preferences from database
-				// For now, using default preferences
-				setLoading(false);
-			} catch (error) {
-				console.error('Error loading notification preferences:', error);
-				setLoading(false);
-			}
-		};
-
-		if (userId) {
-			loadPreferences();
-		}
-	}, [userId]);
-
-	const updatePreferences = async (newPreferences: typeof preferences) => {
-		try {
-			// TODO: Save user notification preferences to database
-			setPreferences(newPreferences);
-		} catch (error) {
-			console.error('Error updating notification preferences:', error);
-		}
-	};
-
-	return {
-		preferences,
-		loading,
-		updatePreferences
-	};
-}
-
-// Hook for managing notification history
-export function useNotificationHistory(userId: string) {
-	const [notifications, setNotifications] = useState<MatchNotification[]>([]);
-	const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		const loadNotifications = async () => {
-			try {
-				const { data, error } = await supabase
-					.from('match_notifications')
-					.select('*')
-					.eq('user_id', userId)
-					.order('sent_at', { ascending: false });
-
-				if (error) throw error;
-				setNotifications(data || []);
-			} catch (error) {
-				console.error('Error loading notification history:', error);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		if (userId) {
-			loadNotifications();
-		}
-	}, [userId]);
-
-	const markAsRead = async (notificationId: string) => {
-		try {
-			await supabase
-				.from('match_notifications')
-				.update({ read_at: new Date().toISOString() })
-				.eq('id', notificationId);
-
-			setNotifications(prev =>
-				prev.map(n => n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n)
-			);
-		} catch (error) {
-			console.error('Error marking notification as read:', error);
-		}
-	};
-
-	return {
-		notifications,
-		loading,
-		markAsRead
-	};
-}
-
 // Utility to send email notification via Supabase Edge Function
-
 export async function sendEmailNotification({
 	user_id,
 	type,
