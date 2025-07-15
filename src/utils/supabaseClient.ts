@@ -14,5 +14,3 @@ export function createSupabaseClient() {
 
 	return createClient(supabaseUrl, supabaseAnonKey);
 }
-
-export const supabase = createSupabaseClient();
