@@ -26,7 +26,7 @@ WHERE type IS NULL;
 -- Update notifications based on message content for more accurate typing
 -- Claims that were accepted
 UPDATE notifications 
-SET type = 'claim_accepted'
+SET type = 'claim_'
 WHERE type = 'claim_on_listing' 
   AND message ILIKE '%accepted%';
 
