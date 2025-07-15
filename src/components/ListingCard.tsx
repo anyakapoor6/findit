@@ -556,7 +556,7 @@ function ShareSheet({ open, onClose, listing }: { open: boolean, onClose: () => 
 						Copy Share Link
 					</button>
 				)}
-				{shared && <div style={{ color: '#059669', fontWeight: 600, marginTop: 8 }}>Thanks for sharing!</div>}
+				{shared && <div style={{ color: '#059669', fontWeight: 600, marginTop: 8 }}>Thank you for sharing!</div>}
 			</div>
 		</div>
 	);
