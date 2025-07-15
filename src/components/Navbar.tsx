@@ -190,16 +190,18 @@ export default function Navbar() {
     setIsClient(true);
   }, []);
 
-  // FIXED: Pathname effect - only run on client-side
+  // FIXED: Pathname effect - only run on client-side with proper guards
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient || typeof window === 'undefined') return;
 
     // Get initial pathname
     setPathname(window.location.pathname);
 
     // Listen for route changes using popstate
     const handleRouteChange = () => {
-      setPathname(window.location.pathname);
+      if (typeof window !== 'undefined') {
+        setPathname(window.location.pathname);
+      }
     };
 
     // Listen for browser navigation
@@ -220,15 +222,17 @@ export default function Navbar() {
     };
 
     return () => {
-      window.removeEventListener('popstate', handleRouteChange);
-      history.pushState = originalPushState;
-      history.replaceState = originalReplaceState;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('popstate', handleRouteChange);
+        history.pushState = originalPushState;
+        history.replaceState = originalReplaceState;
+      }
     };
   }, [isClient]);
 
-  // FIXED: Auth check effect with proper loading state
+  // FIXED: Auth check effect with proper loading state and guards
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient || typeof window === 'undefined') return;
 
     const checkAuth = async () => {
       try {
@@ -256,7 +260,8 @@ export default function Navbar() {
 
   // Real-time notification subscription
   useEffect(() => {
-    // MOVED: Early return logic inside the effect to avoid breaking hooks order
+    if (!isClient || typeof window === 'undefined') return;
+
     if (notifUser) {
       // Initial fetch for unread
       const fetchUnread = async () => {
@@ -287,10 +292,12 @@ export default function Navbar() {
         clearInterval(interval);
       };
     }
-  }, [notifUser]);
+  }, [notifUser, isClient]);
 
   // Fetch notifications when dropdown opens
   useEffect(() => {
+    if (!isClient || typeof window === 'undefined') return;
+
     if (showDropdown && notifUser) {
       setNotifLoading(true);
       supabase
@@ -304,10 +311,12 @@ export default function Navbar() {
           setHasUnread(Boolean((data || []).some(n => !n.is_read)));
         });
     }
-  }, [showDropdown, notifUser]);
+  }, [showDropdown, notifUser, isClient]);
 
   // Close dropdown on outside click
   useEffect(() => {
+    if (!isClient || typeof window === 'undefined') return;
+
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
@@ -317,7 +326,7 @@ export default function Navbar() {
       document.addEventListener('mousedown', handleClick);
     }
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [showDropdown]);
+  }, [showDropdown, isClient]);
 
   // Mark notification as read
   const markAsRead = async (notifId: string) => {
@@ -327,7 +336,7 @@ export default function Navbar() {
 
   // FIXED: Helper function to check if a link is active
   const isActiveLink = (href: string) => {
-    if (!isClient || !pathname) return false;
+    if (!isClient || !pathname || typeof window === 'undefined') return false;
 
     // Handle exact matches and special cases
     if (href === '/') {

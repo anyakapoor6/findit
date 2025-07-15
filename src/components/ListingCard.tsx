@@ -146,25 +146,30 @@ const Card = styled.div<{ $isLost: boolean; $isResolved: boolean }>`
   }
 `;
 
-// FIXED: Updated placeholder styling with emoji and text
+// FIXED: Updated placeholder styling with proper centering and spacing
 const Placeholder = styled.div`
   width: 180px;
   height: 180px;
   margin: 0 auto 2rem auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  text-align: center;
   border-radius: 1rem;
   border: 1.5px dashed #d1d5db;
   background: #f1f1f1;
   color: #9ca3af;
-  font-size: 3rem;
   position: relative;
 `;
 
+const PlaceholderEmoji = styled.span`
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+`;
+
 const PlaceholderText = styled.div`
-  margin-top: 0.75rem;
   color: #9ca3af;
   font-size: 0.875rem;
   text-align: center;
@@ -189,20 +194,21 @@ const CardImage = styled.img`
   height: 100%;
   object-fit: cover;
 `;
+
+// FIXED: Updated header to include title and status badge in same row
 const CardHeader = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 0.5rem;
+  gap: 0.5rem;
 `;
-const TitleTagsRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  flex-wrap: wrap;
-  min-width: 0;
+
+const TitleSection = styled.div`
   flex: 1;
+  min-width: 0;
 `;
+
 const Title = styled.h3`
   font-size: 1.35rem;
   font-weight: 800;
@@ -211,8 +217,8 @@ const Title = styled.h3`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 0;
 `;
+
 const Status = styled.span<{ $isLost: boolean; $isResolved: boolean }>`
   padding: 0.3rem 1rem;
   border-radius: 999px;
@@ -222,6 +228,7 @@ const Status = styled.span<{ $isLost: boolean; $isResolved: boolean }>`
   letter-spacing: 0.04em;
   box-shadow: 0 1px 3px rgba(0,0,0,0.07);
   border: 1.5px solid;
+  flex-shrink: 0;
   ${({ $isLost, $isResolved }) => $isResolved ? `
     background: #fbcfe8;
     color: #be185d;
@@ -236,32 +243,38 @@ const Status = styled.span<{ $isLost: boolean; $isResolved: boolean }>`
     border-color: #4ade80;
   `}
 `;
+
 const Description = styled.p`
   color: #222;
   font-size: 1.08rem;
-  margin-bottom: 1.1rem;
+  margin: 0.7rem 0 1.1rem 0;
   min-height: 2.5em;
   font-weight: 500;
 `;
+
 const Info = styled.div`
   font-size: 1.05rem;
   color: #333;
-  margin-bottom: 0.7rem;
+  margin-bottom: 1rem;
 `;
+
 const InfoRow = styled.div`
   display: flex;
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.2rem;
 `;
+
 const InfoLabel = styled.span`
   font-weight: 700;
   color: #111;
 `;
+
 const InfoValue = styled.span`
   color: #444;
   font-weight: 500;
 `;
+
 const Actions = styled.div`
   display: flex;
   gap: 0.7rem;
@@ -269,6 +282,7 @@ const Actions = styled.div`
   border-top: 1.5px solid #e5e7eb;
   margin-top: auto;
 `;
+
 const ActionButton = styled.button`
   flex: 1;
   padding: 0.7rem 0;
@@ -290,7 +304,7 @@ const ActionButton = styled.button`
 const TagRow = styled.div`
   display: flex;
   gap: 0.5rem;
-  margin: 0.5rem 0 0.7rem 0;
+  margin: 0.5rem 0;
   flex-wrap: wrap;
   align-items: center;
 `;
@@ -767,37 +781,39 @@ export default function ListingCard({
 					<CardImage src={listing.image_url} alt={listing.title} />
 				) : (
 					<Placeholder>
-						<span style={{ fontSize: '3rem' }}>
+						<PlaceholderEmoji>
 							{getEmojiForCategory(listing.item_type, listing.item_subtype)}
-						</span>
+						</PlaceholderEmoji>
 						<PlaceholderText>No image provided</PlaceholderText>
 					</Placeholder>
 				)}
 			</ImageBox>
-			{/* Title and Tags */}
-			<CardHeader style={{ flexDirection: 'column', alignItems: 'flex-start', marginBottom: 0, minHeight: 70 }}>
-				<Title>{listing.title}</Title>
-				{/* FIXED: Updated tag layout with proper flex-wrap and spacing */}
-				<TagRow>
-					{listing.item_type && (
-						<Tag $type={listing.item_type}>
-							{listing.item_type.charAt(0).toUpperCase() + listing.item_type.slice(1)}
-						</Tag>
-					)}
-					{listing.item_subtype && (
-						<Tag $type={listing.item_subtype}>
-							{listing.item_subtype}
-						</Tag>
-					)}
-					<Status $isLost={listing.status === 'lost'} $isResolved={listing.status === 'resolved'}>
-						{listing.status.toUpperCase()}
-					</Status>
-				</TagRow>
+			{/* FIXED: Title and Status badge in same row */}
+			<CardHeader>
+				<TitleSection>
+					<Title>{listing.title}</Title>
+					{/* FIXED: Tags below title with proper spacing */}
+					<TagRow>
+						{listing.item_type && (
+							<Tag $type={listing.item_type}>
+								{listing.item_type.charAt(0).toUpperCase() + listing.item_type.slice(1)}
+							</Tag>
+						)}
+						{listing.item_subtype && (
+							<Tag $type={listing.item_subtype}>
+								{listing.item_subtype}
+							</Tag>
+						)}
+					</TagRow>
+				</TitleSection>
+				<Status $isLost={listing.status === 'lost'} $isResolved={listing.status === 'resolved'}>
+					{listing.status.toUpperCase()}
+				</Status>
 			</CardHeader>
 			{/* Description */}
-			<Description style={{ minHeight: 40, marginBottom: 0 }}>{listing.description}</Description>
+			<Description>{listing.description}</Description>
 			{/* Condensed Location with Show More */}
-			<Info style={{ marginBottom: 0, minHeight: 60 }}>
+			<Info>
 				<InfoRow>
 					<InfoLabel>Location:</InfoLabel>
 					<InfoValue>
