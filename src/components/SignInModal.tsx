@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { signIn, signUp } from '../lib/auth';
 
@@ -99,7 +99,16 @@ export default function SignInModal({ open, onClose, onSignIn }: { open: boolean
   const [message, setMessage] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
 
-  if (!open) return null;
+  // FIXED: Added client-side only state to prevent hydration issues
+  const [isClient, setIsClient] = useState(false);
+
+  // FIXED: Client-side only effect to prevent hydration issues
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // FIXED: Don't render anything until client-side hydration is complete
+  if (!isClient || !open) return null;
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();

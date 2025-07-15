@@ -166,6 +166,11 @@ async function getUserNotificationPrefs(userId: string) {
 
 export default function CreateListingPage() {
 	const router = useRouter();
+
+	// FIXED: Added client-side only state to prevent hydration issues
+	const [isClient, setIsClient] = useState(false);
+	const [authChecked, setAuthChecked] = useState(false);
+
 	const [formData, setFormData] = useState<CreateListingData>({
 		title: '',
 		description: '',
@@ -249,34 +254,63 @@ export default function CreateListingPage() {
 	};
 	const [extraFields, setExtraFields] = useState<Record<string, string>>({});
 
+	// FIXED: Client-side only effect to prevent hydration issues
+	useEffect(() => {
+		setIsClient(true);
+	}, []);
+
+	// FIXED: Auth check effect - moved early return logic inside the effect
 	useEffect(() => {
 		const checkAuth = async () => {
-			const currentUser = await getCurrentUser();
-			if (!currentUser) {
+			try {
+				const currentUser = await getCurrentUser();
+				if (currentUser) {
+					setUser(currentUser);
+				} else {
+					// FIXED: Show sign-in modal for unauthenticated users
+					setShowSignIn(true);
+				}
+			} catch (error) {
+				console.error('Auth check failed:', error);
+				// FIXED: Show sign-in modal on auth error
 				setShowSignIn(true);
-				return;
+			} finally {
+				setAuthChecked(true);
 			}
-			setUser(currentUser);
 		};
-		checkAuth();
-	}, [router]);
+
+		// Only run auth check on client-side
+		if (isClient) {
+			checkAuth();
+		}
+	}, [isClient]);
+
+	useEffect(() => {
+		setExtraFields({});
+	}, [formData.item_type]);
 
 	const handleSignInSuccess = () => {
 		setShowSignIn(false);
-		// Re-run the auth/profile check
-		setTimeout(() => window.location.reload(), 100);
+		// FIXED: Improved sign-in success handling
+		setTimeout(() => {
+			// Re-check auth after sign-in
+			getCurrentUser().then(currentUser => {
+				if (currentUser) {
+					setUser(currentUser);
+					setAuthChecked(true);
+				}
+			}).catch(() => {
+				// If auth check fails, redirect to home
+				router.push('/');
+			});
+		}, 100);
 	};
 
-	// Show modal if not signed in
-	if (showSignIn) {
-		return (
-			<SignInModal
-				open={showSignIn}
-				onClose={() => router.push('/')}
-				onSignIn={handleSignInSuccess}
-			/>
-		);
-	}
+	const handleSignInClose = () => {
+		setShowSignIn(false);
+		// FIXED: Redirect to home if user closes sign-in modal
+		router.push('/');
+	};
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
 		const { name, value } = e.target;
@@ -388,14 +422,40 @@ export default function CreateListingPage() {
 		}
 	};
 
-	useEffect(() => {
-		setExtraFields({});
-	}, [formData.item_type]);
+	// FIXED: Show loading state during initial client-side hydration
+	if (!isClient) {
+		return (
+			<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+				<LoadingSpinner size="lg" text="Loading..." />
+			</div>
+		);
+	}
 
-	if (!user) {
+	// FIXED: Show loading state while checking authentication
+	if (!authChecked) {
 		return (
 			<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
 				<LoadingSpinner size="lg" text="Checking authentication..." />
+			</div>
+		);
+	}
+
+	// FIXED: Show sign-in modal for unauthenticated users
+	if (showSignIn) {
+		return (
+			<SignInModal
+				open={showSignIn}
+				onClose={handleSignInClose}
+				onSignIn={handleSignInSuccess}
+			/>
+		);
+	}
+
+	// FIXED: Show loading state if user is not loaded yet
+	if (!user) {
+		return (
+			<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+				<LoadingSpinner size="lg" text="Loading user data..." />
 			</div>
 		);
 	}

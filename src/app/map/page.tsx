@@ -160,50 +160,50 @@ export default function MapPage() {
 	useEffect(() => {
 		let isMounted = true;
 		loadGoogleMapsScript(MAPS_API_KEY as string, []).then(() => {
-			if (!isMounted || !mapRef.current || !listings.length) return;
+			// MOVED: Early return logic inside the effect to avoid breaking hooks order
+			if (isMounted && mapRef.current && listings.length) {
+				const google = (window as any).google;
 
-			const google = (window as any).google;
+				// Calculate bounds to fit all markers
+				const bounds = new google.maps.LatLngBounds();
+				const validListings = listings.filter(listing => listing.location_lat && listing.location_lng);
 
-			// Calculate bounds to fit all markers
-			const bounds = new google.maps.LatLngBounds();
-			const validListings = listings.filter(listing => listing.location_lat && listing.location_lng);
+				// MOVED: Early return logic inside the effect to avoid breaking hooks order
+				if (validListings.length > 0) {
+					// Initialize map
+					const gmap = new google.maps.Map(mapRef.current, {
+						zoom: 10,
+						mapTypeControl: false,
+						streetViewControl: false,
+						fullscreenControl: false,
+					});
 
-			if (validListings.length === 0) return;
+					// Create info window
+					const infoWin = new google.maps.InfoWindow();
+					setInfoWindow(infoWin);
 
-			// Initialize map
-			const gmap = new google.maps.Map(mapRef.current, {
-				zoom: 10,
-				mapTypeControl: false,
-				streetViewControl: false,
-				fullscreenControl: false,
-			});
+					// Create markers
+					const newMarkers: any[] = [];
 
-			// Create info window
-			const infoWin = new google.maps.InfoWindow();
-			setInfoWindow(infoWin);
+					validListings.forEach(listing => {
+						// MOVED: Early return logic inside the effect to avoid breaking hooks order
+						if (listing.location_lat && listing.location_lng) {
+							const position = { lat: listing.location_lat, lng: listing.location_lng };
+							bounds.extend(position);
 
-			// Create markers
-			const newMarkers: any[] = [];
+							const marker = new google.maps.Marker({
+								position,
+								map: gmap,
+								title: listing.title,
+								icon: {
+									url: listing.status === 'lost' ? '/pin-red.svg' : '/pin-green.svg',
+									scaledSize: new google.maps.Size(36, 36),
+									anchor: new google.maps.Point(18, 32),
+								},
+							});
 
-			validListings.forEach(listing => {
-				if (!listing.location_lat || !listing.location_lng) return;
-
-				const position = { lat: listing.location_lat, lng: listing.location_lng };
-				bounds.extend(position);
-
-				const marker = new google.maps.Marker({
-					position,
-					map: gmap,
-					title: listing.title,
-					icon: {
-						url: listing.status === 'lost' ? '/pin-red.svg' : '/pin-green.svg',
-						scaledSize: new google.maps.Size(36, 36),
-						anchor: new google.maps.Point(18, 32),
-					},
-				});
-
-				// Create info window content
-				const content = `
+							// Create info window content
+							const content = `
         <div style="padding: 1rem; max-width: 300px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
           <h3 style="font-size: 1.1rem; font-weight: 600; color: #111; margin-bottom: 0.5rem;">${listing.title}</h3>
           ${listing.image_url ? `<img src="${listing.image_url}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 0.5rem; margin-bottom: 0.75rem;" alt="${listing.title}" />` : ''}
@@ -212,29 +212,32 @@ export default function MapPage() {
         </div>
       `;
 
-				marker.addListener('click', () => {
-					infoWin.setContent(content);
-					infoWin.open(gmap, marker);
-				});
+							marker.addListener('click', () => {
+								infoWin.setContent(content);
+								infoWin.open(gmap, marker);
+							});
 
-				newMarkers.push(marker);
-			});
+							newMarkers.push(marker);
+						}
+					});
 
-			setMarkers(newMarkers);
-			setMap(gmap);
+					setMarkers(newMarkers);
+					setMap(gmap);
 
-			// Fit map to bounds
-			if (validListings.length > 1) {
-				gmap.fitBounds(bounds);
-			} else {
-				gmap.setCenter(bounds.getCenter());
-				gmap.setZoom(15);
+					// Fit map to bounds
+					if (validListings.length > 1) {
+						gmap.fitBounds(bounds);
+					} else {
+						gmap.setCenter(bounds.getCenter());
+						gmap.setZoom(15);
+					}
+
+					// Cleanup function
+					return () => {
+						newMarkers.forEach(marker => marker.setMap(null));
+					};
+				}
 			}
-
-			// Cleanup function
-			return () => {
-				newMarkers.forEach(marker => marker.setMap(null));
-			};
 		});
 		return () => { isMounted = false; };
 	}, [listings]);

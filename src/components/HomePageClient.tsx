@@ -141,13 +141,15 @@ export default function HomePageClient() {
 
 	// On mount, read filters from URL
 	useEffect(() => {
-		if (!searchParams) return;
-		setSearch(searchParams.get('q') || '');
-		setStatus(searchParams.get('status') || 'all');
-		setLocation(searchParams.get('location') || '');
-		setCategory(searchParams.get('category') || '');
-		setSubcategory(searchParams.get('subcategory') || '');
-		setDate(searchParams.get('date') || '');
+		// MOVED: Early return logic inside the effect to avoid breaking hooks order
+		if (searchParams) {
+			setSearch(searchParams.get('q') || '');
+			setStatus(searchParams.get('status') || 'all');
+			setLocation(searchParams.get('location') || '');
+			setCategory(searchParams.get('category') || '');
+			setSubcategory(searchParams.get('subcategory') || '');
+			setDate(searchParams.get('date') || '');
+		}
 		// eslint-disable-next-line
 	}, []);
 
@@ -187,17 +189,18 @@ export default function HomePageClient() {
 	}, []);
 
 	useEffect(() => {
-		if (!userChecked) return;
-		if (userRef.current) return;
-		// Only attach scroll listener for non-signed-in users
-		const handleScroll = () => {
-			if (window.scrollY > 400) {
-				setShowSignIn(true);
-				window.removeEventListener('scroll', handleScroll);
-			}
-		};
-		window.addEventListener('scroll', handleScroll);
-		return () => window.removeEventListener('scroll', handleScroll);
+		// MOVED: Early return logic inside the effect to avoid breaking hooks order
+		if (userChecked && !userRef.current) {
+			// Only attach scroll listener for non-signed-in users
+			const handleScroll = () => {
+				if (window.scrollY > 400) {
+					setShowSignIn(true);
+					window.removeEventListener('scroll', handleScroll);
+				}
+			};
+			window.addEventListener('scroll', handleScroll);
+			return () => window.removeEventListener('scroll', handleScroll);
+		}
 	}, [userChecked]);
 
 	useEffect(() => {

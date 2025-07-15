@@ -21,49 +21,54 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange, label 
 	useEffect(() => {
 		let isMounted = true;
 		loadGoogleMapsScript(MAPS_API_KEY as string, ['places']).then(() => {
-			if (!isMounted) return;
-			if (!inputRef.current || !mapRef.current) return;
-			const google = (window as any).google;
-			if (!google?.maps?.places) return;
-			const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-				types: ['geocode'],
-				componentRestrictions: { country: 'us' },
-			});
-			autocomplete.addListener('place_changed', () => {
-				const place = autocomplete.getPlace();
-				if (!place.geometry) return;
-				const lat = place.geometry.location.lat();
-				const lng = place.geometry.location.lng();
-				onChange({ address: place.formatted_address || '', lat, lng });
-				if (map) {
-					map.setCenter({ lat, lng });
-					map.setZoom(15);
-				}
-				if (marker) {
-					marker.setPosition({ lat, lng });
-				}
-			});
-			// Initialize map
-			if (!map) {
-				const gmap = new google.maps.Map(mapRef.current, {
-					center: value.lat !== undefined && value.lng !== undefined ? { lat: value.lat, lng: value.lng } : { lat: 37.7749, lng: -122.4194 },
-					zoom: value.lat !== undefined && value.lng !== undefined ? 15 : 10,
-					mapTypeControl: false,
-					streetViewControl: false,
-				});
-				setMap(gmap);
-				const gmarker = new google.maps.Marker({
-					map: gmap,
-					position: value.lat !== undefined && value.lng !== undefined ? { lat: value.lat, lng: value.lng } : undefined,
-					draggable: true,
-				});
-				setMarker(gmarker);
-				gmarker.addListener('dragend', () => {
-					const pos = gmarker.getPosition();
-					if (pos) {
-						onChange({ address: value.address, lat: pos.lat(), lng: pos.lng() });
+			// MOVED: Early return logic inside the effect to avoid breaking hooks order
+			if (isMounted && inputRef.current && mapRef.current) {
+				const google = (window as any).google;
+				// MOVED: Early return logic inside the effect to avoid breaking hooks order
+				if (google?.maps?.places) {
+					const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+						types: ['geocode'],
+						componentRestrictions: { country: 'us' },
+					});
+					autocomplete.addListener('place_changed', () => {
+						const place = autocomplete.getPlace();
+						// MOVED: Early return logic inside the effect to avoid breaking hooks order
+						if (place.geometry) {
+							const lat = place.geometry.location.lat();
+							const lng = place.geometry.location.lng();
+							onChange({ address: place.formatted_address || '', lat, lng });
+							if (map) {
+								map.setCenter({ lat, lng });
+								map.setZoom(15);
+							}
+							if (marker) {
+								marker.setPosition({ lat, lng });
+							}
+						}
+					});
+					// Initialize map
+					if (!map) {
+						const gmap = new google.maps.Map(mapRef.current, {
+							center: value.lat !== undefined && value.lng !== undefined ? { lat: value.lat, lng: value.lng } : { lat: 37.7749, lng: -122.4194 },
+							zoom: value.lat !== undefined && value.lng !== undefined ? 15 : 10,
+							mapTypeControl: false,
+							streetViewControl: false,
+						});
+						setMap(gmap);
+						const gmarker = new google.maps.Marker({
+							map: gmap,
+							position: value.lat !== undefined && value.lng !== undefined ? { lat: value.lat, lng: value.lng } : undefined,
+							draggable: true,
+						});
+						setMarker(gmarker);
+						gmarker.addListener('dragend', () => {
+							const pos = gmarker.getPosition();
+							if (pos) {
+								onChange({ address: value.address, lat: pos.lat(), lng: pos.lng() });
+							}
+						});
 					}
-				});
+				}
 			}
 		});
 		return () => { isMounted = false; };

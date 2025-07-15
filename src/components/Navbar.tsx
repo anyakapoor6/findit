@@ -171,35 +171,37 @@ export default function Navbar() {
 
   // Real-time notification subscription
   useEffect(() => {
-    if (!notifUser) return;
-    // Initial fetch for unread
-    const fetchUnread = async () => {
-      const { data } = await supabase
-        .from('notifications')
-        .select('id')
-        .eq('user_id', notifUser.id)
-        .eq('is_read', false)
-        .limit(1);
-      setHasUnread(Boolean(data && data.length > 0));
-    };
-    fetchUnread();
-    // Subscribe to new notifications
-    const channel = supabase
-      .channel('public:notifications')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${notifUser.id}` },
-        (payload) => {
-          setHasUnread(true);
-        }
-      )
-      .subscribe();
-    // Polling fallback (every 15s)
-    const interval = setInterval(fetchUnread, 15000);
-    return () => {
-      supabase.removeChannel(channel);
-      clearInterval(interval);
-    };
+    // MOVED: Early return logic inside the effect to avoid breaking hooks order
+    if (notifUser) {
+      // Initial fetch for unread
+      const fetchUnread = async () => {
+        const { data } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', notifUser.id)
+          .eq('is_read', false)
+          .limit(1);
+        setHasUnread(Boolean(data && data.length > 0));
+      };
+      fetchUnread();
+      // Subscribe to new notifications
+      const channel = supabase
+        .channel('public:notifications')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${notifUser.id}` },
+          (payload) => {
+            setHasUnread(true);
+          }
+        )
+        .subscribe();
+      // Polling fallback (every 15s)
+      const interval = setInterval(fetchUnread, 15000);
+      return () => {
+        supabase.removeChannel(channel);
+        clearInterval(interval);
+      };
+    }
   }, [notifUser]);
 
   // Fetch notifications when dropdown opens

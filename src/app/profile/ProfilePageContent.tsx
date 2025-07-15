@@ -273,19 +273,21 @@ export default function ProfilePageContent() {
 	useEffect(() => { setMounted(true); }, []);
 
 	useEffect(() => {
-		if (!user) return;
-		setPrefsLoading(true);
-		getUserPreferences(user.id).then((data) => {
-			setPrefs(data || {
-				user_id: user.id,
-				show_phone_on_claim: true,
-				show_email_on_claim: true,
+		// MOVED: Early return logic inside the effect to avoid breaking hooks order
+		if (user) {
+			setPrefsLoading(true);
+			getUserPreferences(user.id).then((data) => {
+				setPrefs(data || {
+					user_id: user.id,
+					show_phone_on_claim: true,
+					show_email_on_claim: true,
+				});
+				setPrefsLoading(false);
+			}).catch(() => {
+				setPrefsError('Could not load contact preferences.');
+				setPrefsLoading(false);
 			});
-			setPrefsLoading(false);
-		}).catch(() => {
-			setPrefsError('Could not load contact preferences.');
-			setPrefsLoading(false);
-		});
+		}
 	}, [user]);
 
 	useEffect(() => {
@@ -354,34 +356,36 @@ export default function ProfilePageContent() {
 	// Fetch claims on my listings
 	useEffect(() => {
 		async function fetchClaims() {
-			if (!user) return;
-			setClaimsLoading(true);
-			// Get all listings owned by user
-			const { data: listings } = await supabase
-				.from('listings')
-				.select('id, title')
-				.eq('user_id', user.id);
-			if (!listings || listings.length === 0) {
-				setMyClaims([]);
+			// MOVED: Early return logic inside the effect to avoid breaking hooks order
+			if (user && activeTab === 'claims') {
+				setClaimsLoading(true);
+				// Get all listings owned by user
+				const { data: listings } = await supabase
+					.from('listings')
+					.select('id, title')
+					.eq('user_id', user.id);
+				if (!listings || listings.length === 0) {
+					setMyClaims([]);
+					setClaimsLoading(false);
+					return;
+				}
+				const listingIds = listings.map((l: any) => l.id);
+				// Get all claims for those listings
+				const { data: claims } = await supabase
+					.from('claims')
+					.select('*, claimant:claimant_id(name, email)')
+					.in('listing_id', listingIds)
+					.order('created_at', { ascending: false });
+				// Attach listing title
+				const claimsWithTitle = (claims || []).map((c: any) => ({
+					...c,
+					listingTitle: listings.find((l: any) => l.id === c.listing_id)?.title || 'Listing',
+				}));
+				setMyClaims(claimsWithTitle);
 				setClaimsLoading(false);
-				return;
 			}
-			const listingIds = listings.map((l: any) => l.id);
-			// Get all claims for those listings
-			const { data: claims } = await supabase
-				.from('claims')
-				.select('*, claimant:claimant_id(name, email)')
-				.in('listing_id', listingIds)
-				.order('created_at', { ascending: false });
-			// Attach listing title
-			const claimsWithTitle = (claims || []).map((c: any) => ({
-				...c,
-				listingTitle: listings.find((l: any) => l.id === c.listing_id)?.title || 'Listing',
-			}));
-			setMyClaims(claimsWithTitle);
-			setClaimsLoading(false);
 		}
-		if (activeTab === 'claims') fetchClaims();
+		fetchClaims();
 	}, [activeTab, user]);
 
 	// Add state for user claims
@@ -391,22 +395,24 @@ export default function ProfilePageContent() {
 	// Fetch claims made by the user
 	useEffect(() => {
 		async function fetchUserClaims() {
-			if (!user) return;
-			setUserClaimsLoading(true);
-			// Get all claims where the user is the claimant
-			const { data: claims, error } = await supabase
-				.from('claims')
-				.select('*, listing:listings(*)')
-				.eq('claimant_id', user.id)
-				.order('created_at', { ascending: false });
-			if (!error && claims) {
-				setUserClaims(claims);
-			} else {
-				setUserClaims([]);
+			// MOVED: Early return logic inside the effect to avoid breaking hooks order
+			if (user && activeTab === 'userClaims') {
+				setUserClaimsLoading(true);
+				// Get all claims where the user is the claimant
+				const { data: claims, error } = await supabase
+					.from('claims')
+					.select('*, listing:listings(*)')
+					.eq('claimant_id', user.id)
+					.order('created_at', { ascending: false });
+				if (!error && claims) {
+					setUserClaims(claims);
+				} else {
+					setUserClaims([]);
+				}
+				setUserClaimsLoading(false);
 			}
-			setUserClaimsLoading(false);
 		}
-		if (activeTab === 'userClaims') fetchUserClaims();
+		fetchUserClaims();
 	}, [activeTab, user]);
 
 	useEffect(() => {

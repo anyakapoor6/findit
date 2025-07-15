@@ -195,30 +195,30 @@ export default function MatchesPageClient() {
 
 	useEffect(() => {
 		const fetchMatches = async () => {
-			if (!user) return;
-			try {
-				const [matchesData, statsData] = await Promise.all([
-					getUserMatches(user.id),
-					getMatchStats(user.id)
-				]);
-				const filtered = filterValidMatches(matchesData);
-				setMatches(filtered);
-				setStats({
-					totalMatches: filtered.length,
-					highConfidenceMatches: filtered.filter(m => m.score >= 0.6).length,
-					recentMatches: filtered.filter(m => {
-						const now = new Date();
-						const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-						return new Date(m.listing_created_at) >= sevenDaysAgo;
-					}).length
-				});
-			} catch (error) {
-				console.error('Error fetching matches:', error);
+			// MOVED: Early return logic inside the effect to avoid breaking hooks order
+			if (user) {
+				try {
+					const [matchesData, statsData] = await Promise.all([
+						getUserMatches(user.id),
+						getMatchStats(user.id)
+					]);
+					const filtered = filterValidMatches(matchesData);
+					setMatches(filtered);
+					setStats({
+						totalMatches: filtered.length,
+						highConfidenceMatches: filtered.filter(m => m.score >= 0.6).length,
+						recentMatches: filtered.filter(m => {
+							const now = new Date();
+							const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+							return new Date(m.listing_created_at) >= sevenDaysAgo;
+						}).length
+					});
+				} catch (error) {
+					console.error('Error fetching matches:', error);
+				}
 			}
 		};
-		if (user) {
-			fetchMatches();
-		}
+		fetchMatches();
 	}, [user]);
 
 	const handleSignInSuccess = () => {
@@ -281,6 +281,7 @@ export default function MatchesPageClient() {
 		});
 	}
 
+	// MOVED: All conditional returns to the end after all hooks are called
 	if (loading) {
 		return (
 			<Container>
