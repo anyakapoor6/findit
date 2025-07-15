@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import styled from 'styled-components';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { createSupabaseClient } from '../utils/supabaseClient';
 const supabase = createSupabaseClient();
@@ -59,7 +59,7 @@ const Spacer = styled.div`
   flex: 1;
 `;
 
-const NavLink = styled(Link) <{ $variant?: 'default' | 'primary' }>`
+const NavLink = styled(Link) <{ $variant?: 'default' | 'primary'; $isActive?: boolean }>`
   padding: 0.75rem 1.1rem;
   border-radius: 0.5rem;
   font-weight: 500;
@@ -68,11 +68,14 @@ const NavLink = styled(Link) <{ $variant?: 'default' | 'primary' }>`
   text-decoration: none;
   color: #111;
   cursor: pointer;
-  ${({ $variant = 'default' }) => {
+  ${({ $variant = 'default', $isActive }) => {
     switch ($variant) {
       case 'default':
         return `
-          background: none;
+          background: ${$isActive ? 'rgba(37, 99, 235, 0.1)' : 'none'};
+          color: ${$isActive ? '#2563eb' : '#111'};
+          font-weight: ${$isActive ? '600' : '500'};
+          border: ${$isActive ? '1px solid rgba(37, 99, 235, 0.2)' : 'none'};
           &:hover {
             background-color: rgba(59, 130, 246, 0.1);
           }
@@ -171,6 +174,8 @@ const SkeletonLink = styled.div`
 
 export default function Navbar() {
   const router = useRouter();
+  // FIXED: Client-side only pathname state
+  const [pathname, setPathname] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
@@ -184,6 +189,42 @@ export default function Navbar() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // FIXED: Pathname effect - only run on client-side
+  useEffect(() => {
+    if (!isClient) return;
+
+    // Get initial pathname
+    setPathname(window.location.pathname);
+
+    // Listen for route changes using popstate
+    const handleRouteChange = () => {
+      setPathname(window.location.pathname);
+    };
+
+    // Listen for browser navigation
+    window.addEventListener('popstate', handleRouteChange);
+
+    // Also listen for pushState/replaceState changes
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function (...args) {
+      originalPushState.apply(history, args);
+      handleRouteChange();
+    };
+
+    history.replaceState = function (...args) {
+      originalReplaceState.apply(history, args);
+      handleRouteChange();
+    };
+
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+    };
+  }, [isClient]);
 
   // FIXED: Auth check effect with proper loading state
   useEffect(() => {
@@ -284,6 +325,19 @@ export default function Navbar() {
     await supabase.from('notifications').update({ is_read: true }).eq('id', notifId);
   };
 
+  // FIXED: Helper function to check if a link is active
+  const isActiveLink = (href: string) => {
+    if (!isClient || !pathname) return false;
+
+    // Handle exact matches and special cases
+    if (href === '/') {
+      return pathname === '/';
+    }
+
+    // Handle other routes
+    return pathname.startsWith(href);
+  };
+
   // FIXED: Show loading skeleton during initial hydration
   if (!isClient || !authChecked) {
     return (
@@ -309,13 +363,49 @@ export default function Navbar() {
           <Logo>FindIt</Logo>
         </Link>
         <NavLinks>
-          <NavLink href="/" $variant="default">Home</NavLink>
-          <NavLink href="/create-listing" $variant="default">Create Listing</NavLink>
-          <NavLink href="/map" $variant="default">Map</NavLink>
-          <NavLink href="/matches" $variant="default">Matches</NavLink>
+          <NavLink
+            href="/"
+            $variant="default"
+            $isActive={isActiveLink('/')}
+          >
+            Home
+          </NavLink>
+          <NavLink
+            href="/create-listing"
+            $variant="default"
+            $isActive={isActiveLink('/create-listing')}
+          >
+            Create Listing
+          </NavLink>
+          <NavLink
+            href="/map"
+            $variant="default"
+            $isActive={isActiveLink('/map')}
+          >
+            Map
+          </NavLink>
+          <NavLink
+            href="/matches"
+            $variant="default"
+            $isActive={isActiveLink('/matches')}
+          >
+            Matches
+          </NavLink>
           <Spacer />
-          <NavLink href="/profile" $variant="default">Profile</NavLink>
-          <NavLink href="/contact" $variant="default">Contact</NavLink>
+          <NavLink
+            href="/profile"
+            $variant="default"
+            $isActive={isActiveLink('/profile')}
+          >
+            Profile
+          </NavLink>
+          <NavLink
+            href="/contact"
+            $variant="default"
+            $isActive={isActiveLink('/contact')}
+          >
+            Contact
+          </NavLink>
         </NavLinks>
         {/* Notification Bell */}
         <div style={{ position: 'relative' }}>

@@ -24,6 +24,83 @@ interface ListingCardProps {
 const CARD_WIDTH = '300px';
 const CARD_HEIGHT = '470px';
 
+// FIXED: Helper function to get emoji for category and subcategory
+function getEmojiForCategory(category?: string, subcategory?: string): string {
+	if (!category) return '❓';
+
+	const categoryEmojis: Record<string, string> = {
+		'pets': '🐾',
+		'electronics': '💻',
+		'keys': '🔑',
+		'bags': '👜',
+		'jewelry': '💍',
+		'clothing': '👕',
+		'documents': '📄',
+		'toys': '🧸',
+		'other': '❓'
+	};
+
+	const subcategoryEmojis: Record<string, Record<string, string>> = {
+		'pets': {
+			'dog': '🐶',
+			'cat': '🐱',
+			'bird': '🐦',
+			'other': '🐾'
+		},
+		'electronics': {
+			'phone': '📱',
+			'laptop': '💻',
+			'tablet': '📱',
+			'headphones': '🎧',
+			'other': '💻'
+		},
+		'keys': {
+			'house key': '🔑',
+			'car key': '🚗',
+			'other': '🔑'
+		},
+		'bags': {
+			'backpack': '🎒',
+			'handbag': '👜',
+			'suitcase': '💼',
+			'wallet': '👛',
+			'other': '👜'
+		},
+		'jewelry': {
+			'ring': '💍',
+			'necklace': '📿',
+			'watch': '⌚',
+			'other': '💍'
+		},
+		'clothing': {
+			'jacket': '🧥',
+			'shirt': '👕',
+			'shoes': '👟',
+			'other': '👕'
+		},
+		'documents': {
+			'id': '🆔',
+			'passport': '🛂',
+			'card': '💳',
+			'other': '📄'
+		},
+		'toys': {
+			'action figure': '🤖',
+			'doll': '🧸',
+			'plushie': '🧸',
+			'other': '🧸'
+		}
+	};
+
+	// If subcategory is provided and exists, use it
+	if (subcategory && subcategoryEmojis[category.toLowerCase()]?.[subcategory.toLowerCase()]) {
+		return subcategoryEmojis[category.toLowerCase()][subcategory.toLowerCase()];
+	}
+
+	// Otherwise use category emoji
+	return categoryEmojis[category.toLowerCase()] || '❓';
+}
+
 const InitialsBox = styled.div`
   position: absolute;
   bottom: 1rem;
@@ -69,6 +146,7 @@ const Card = styled.div<{ $isLost: boolean; $isResolved: boolean }>`
   }
 `;
 
+// FIXED: Updated placeholder styling with emoji and text
 const Placeholder = styled.div`
   width: 180px;
   height: 180px;
@@ -79,10 +157,20 @@ const Placeholder = styled.div`
   justify-content: center;
   border-radius: 1rem;
   border: 1.5px dashed #d1d5db;
-  background: #f3f4f6;
+  background: #f1f1f1;
   color: #9ca3af;
-  font-size: 2.5rem;
+  font-size: 3rem;
+  position: relative;
 `;
+
+const PlaceholderText = styled.div`
+  margin-top: 0.75rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  text-align: center;
+  font-weight: 500;
+`;
+
 const ImageBox = styled.div`
   width: 180px;
   height: 180px;
@@ -197,45 +285,68 @@ const ActionButton = styled.button`
   &.delete { background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; }
   &.delete:hover { background: #fecaca; }
 `;
-const PlaceholderText = styled.div`
-  margin-top: 0.75rem;
-  color: #888;
-  font-size: 1rem;
-  text-align: center;
-`;
 
+// FIXED: Updated tag styling for better alignment and responsiveness
 const TagRow = styled.div`
   display: flex;
   gap: 0.5rem;
-  margin: 0.3rem 0 0.7rem 0;
+  margin: 0.5rem 0 0.7rem 0;
   flex-wrap: wrap;
+  align-items: center;
 `;
+
+// Color mappings for category and subcategory tags
+const TAG_COLORS: Record<string, { bg: string; color: string }> = {
+	electronics: { bg: '#e0f2fe', color: '#0369a1' },
+	phone: { bg: '#dbeafe', color: '#2563eb' },
+	laptop: { bg: '#e0e7ff', color: '#3730a3' },
+	tablet: { bg: '#f1f5f9', color: '#0f172a' },
+	headphones: { bg: '#f3e8ff', color: '#7c3aed' },
+	bags: { bg: '#fef9c3', color: '#b45309' },
+	backpack: { bg: '#fef08a', color: '#a16207' },
+	handbag: { bg: '#f9fafb', color: '#be185d' },
+	suitcase: { bg: '#ede9fe', color: '#6d28d9' },
+	wallet: { bg: '#f1f5f9', color: '#0f172a' },
+	pets: { bg: '#fce7f3', color: '#be185d' },
+	dog: { bg: '#fef2f2', color: '#b91c1c' },
+	cat: { bg: '#f3f4f6', color: '#0f172a' },
+	bird: { bg: '#e0f2fe', color: '#0369a1' },
+	keys: { bg: '#dcfce7', color: '#166534' },
+	'house key': { bg: '#fef3c7', color: '#b45309' },
+	'car key': { bg: '#fee2e2', color: '#b91c1c' },
+	jewelry: { bg: '#ede9fe', color: '#6d28d9' },
+	ring: { bg: '#fef9c3', color: '#a16207' },
+	necklace: { bg: '#fce7f3', color: '#be185d' },
+	watch: { bg: '#e0e7ff', color: '#3730a3' },
+	clothing: { bg: '#e0e7ff', color: '#3730a3' },
+	jacket: { bg: '#f1f5f9', color: '#0f172a' },
+	shirt: { bg: '#fef9c3', color: '#b45309' },
+	shoes: { bg: '#f3f4f6', color: '#0f172a' },
+	documents: { bg: '#fee2e2', color: '#b91c1c' },
+	id: { bg: '#e0e7ff', color: '#3730a3' },
+	passport: { bg: '#fef9c3', color: '#a16207' },
+	card: { bg: '#f3f4f6', color: '#0f172a' },
+	toys: { bg: '#ffedd5', color: '#ea580c' },
+	'action figure': { bg: '#f3f4f6', color: '#0f172a' },
+	doll: { bg: '#fce7f3', color: '#be185d' },
+	plushie: { bg: '#fef2f2', color: '#b91c1c' },
+	other: { bg: '#f3f4f6', color: '#444' },
+};
+
+function getTagColors(type?: string) {
+	if (!type) return TAG_COLORS.other;
+	const key = type.toLowerCase();
+	return TAG_COLORS[key] || TAG_COLORS.other;
+}
+
 const Tag = styled.span<{ $type: string }>`
   display: inline-block;
   padding: 0.28em 0.95em;
   border-radius: 1.2em;
   font-size: 0.98rem;
   font-weight: 600;
-  background: ${({ $type }) =>
-		$type === 'electronics' ? '#e0f2fe' :
-			$type === 'bags' ? '#fef9c3' :
-				$type === 'pets' ? '#fce7f3' :
-					$type === 'keys' ? '#dcfce7' :
-						$type === 'jewelry' ? '#ede9fe' :
-							$type === 'clothing' ? '#e0e7ff' :
-								$type === 'documents' ? '#fee2e2' :
-									$type === 'toys' ? '#ffedd5' : // light orange
-										'#f3f4f6'};
-  color: ${({ $type }) =>
-		$type === 'electronics' ? '#0369a1' :
-			$type === 'bags' ? '#b45309' :
-				$type === 'pets' ? '#be185d' :
-					$type === 'keys' ? '#166534' :
-						$type === 'jewelry' ? '#6d28d9' :
-							$type === 'clothing' ? '#3730a3' :
-								$type === 'documents' ? '#b91c1c' :
-									$type === 'toys' ? '#ea580c' : // dark orange
-										'#444'};
+  background: ${({ $type }) => getTagColors($type).bg};
+  color: ${({ $type }) => getTagColors($type).color};
   border: none;
 `;
 
@@ -564,33 +675,6 @@ function ShareSheet({ open, onClose, listing }: { open: boolean, onClose: () => 
 	);
 }
 
-function getCategoryColor(type: string) {
-	switch (type) {
-		case 'electronics': return '#2563eb';
-		case 'bags': return '#7c3aed';
-		case 'pets': return '#0ea5e9';
-		case 'keys': return '#f59e42';
-		case 'jewelry': return '#eab308';
-		case 'clothing': return '#10b981';
-		case 'documents': return '#6366f1';
-		case 'toys': return '#f472b6';
-		default: return '#6b7280';
-	}
-}
-function getCategoryBg(type: string) {
-	switch (type) {
-		case 'electronics': return '#dbeafe';
-		case 'bags': return '#ede9fe';
-		case 'pets': return '#cffafe';
-		case 'keys': return '#fef3c7';
-		case 'jewelry': return '#fef9c3';
-		case 'clothing': return '#d1fae5';
-		case 'documents': return '#e0e7ff';
-		case 'toys': return '#fce7f3';
-		default: return '#f3f4f6';
-	}
-}
-
 export default function ListingCard({
 	listing,
 	onView,
@@ -682,21 +766,33 @@ export default function ListingCard({
 				{listing.image_url ? (
 					<CardImage src={listing.image_url} alt={listing.title} />
 				) : (
-					<Placeholder>📦</Placeholder>
+					<Placeholder>
+						<span style={{ fontSize: '3rem' }}>
+							{getEmojiForCategory(listing.item_type, listing.item_subtype)}
+						</span>
+						<PlaceholderText>No image provided</PlaceholderText>
+					</Placeholder>
 				)}
 			</ImageBox>
 			{/* Title and Tags */}
 			<CardHeader style={{ flexDirection: 'column', alignItems: 'flex-start', marginBottom: 0, minHeight: 70 }}>
 				<Title>{listing.title}</Title>
-				<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', margin: '0.5rem 0 0.2rem 0', alignItems: 'center' }}>
+				{/* FIXED: Updated tag layout with proper flex-wrap and spacing */}
+				<TagRow>
 					{listing.item_type && (
-						<span style={{ background: getCategoryBg(listing.item_type), color: getCategoryColor(listing.item_type), fontWeight: 700, borderRadius: 8, padding: '0.2rem 0.7rem', fontSize: '0.95rem' }}>{listing.item_type.charAt(0).toUpperCase() + listing.item_type.slice(1)}</span>
+						<Tag $type={listing.item_type}>
+							{listing.item_type.charAt(0).toUpperCase() + listing.item_type.slice(1)}
+						</Tag>
 					)}
 					{listing.item_subtype && (
-						<span style={{ background: '#fce7f3', color: '#be185d', fontWeight: 700, borderRadius: 8, padding: '0.2rem 0.7rem', fontSize: '0.95rem' }}>{listing.item_subtype}</span>
+						<Tag $type={listing.item_subtype}>
+							{listing.item_subtype}
+						</Tag>
 					)}
-					<Status $isLost={listing.status === 'lost'} $isResolved={listing.status === 'resolved'}>{listing.status.toUpperCase()}</Status>
-				</div>
+					<Status $isLost={listing.status === 'lost'} $isResolved={listing.status === 'resolved'}>
+						{listing.status.toUpperCase()}
+					</Status>
+				</TagRow>
 			</CardHeader>
 			{/* Description */}
 			<Description style={{ minHeight: 40, marginBottom: 0 }}>{listing.description}</Description>
