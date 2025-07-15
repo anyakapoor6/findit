@@ -1,27 +1,20 @@
-'use client'
+import { ReactNode } from 'react';
+import { ServerStyleSheet, StyleSheetManager } from 'styled-components';
 
-import React, { useState } from 'react'
-import { useServerInsertedHTML } from 'next/navigation'
-import { ServerStyleSheet, StyleSheetManager } from 'styled-components'
+export default function StyledComponentsRegistry({ children }: { children: ReactNode }) {
+	if (typeof window !== 'undefined') {
+		// On the client, just render children
+		return <>{children}</>;
+	}
 
-export default function StyledComponentsRegistry({
-	children,
-}: {
-	children: React.ReactNode
-}) {
-	const [styledComponentsStyleSheet] = useState(() => new ServerStyleSheet())
-
-	useServerInsertedHTML(() => {
-		const styles = styledComponentsStyleSheet.getStyleElement()
-		styledComponentsStyleSheet.instance.clearTag()
-		return <>{styles}</>
-	})
-
-	if (typeof window !== 'undefined') return <>{children}</>
-
-	return (
-		<StyleSheetManager sheet={styledComponentsStyleSheet.instance}>
-			{children}
-		</StyleSheetManager>
-	)
+	// On the server, collect styles
+	const sheet = new ServerStyleSheet();
+	let html: React.ReactNode;
+	try {
+		html = <StyleSheetManager sheet={sheet.instance}>{children}</StyleSheetManager>;
+		// sheet.getStyleElement() will be injected by Next.js automatically
+		return html;
+	} finally {
+		sheet.seal();
+	}
 } 
