@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { sendEmailNotification } from "../../lib/notifications";
-import { supabase } from "../../utils/supabaseClient";
+import { createSupabaseClient } from "../../utils/supabaseClient";
+const supabase = createSupabaseClient();
 
 export default function ContactPage() {
 	const [name, setName] = useState("");

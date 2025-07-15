@@ -1,4 +1,5 @@
-import { supabase } from '../utils/supabaseClient';
+import { createSupabaseClient } from '../utils/supabaseClient';
+const supabase = createSupabaseClient();
 
 // Upload image to Supabase Storage
 export async function uploadListingImage(file: File, userId: string): Promise<string> {

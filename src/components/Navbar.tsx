@@ -4,7 +4,8 @@ import Link from 'next/link';
 import styled from 'styled-components';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
-import { supabase } from '../utils/supabaseClient';
+import { createSupabaseClient } from '../utils/supabaseClient';
+const supabase = createSupabaseClient();
 import { getListing } from '../lib/listings';
 
 const Nav = styled.nav`

@@ -1,4 +1,5 @@
-import { supabase } from '../utils/supabaseClient';
+import { createSupabaseClient } from '../utils/supabaseClient';
+const supabase = createSupabaseClient();
 import type { Listing, CreateListingData } from './types';
 
 // Fetch all listings

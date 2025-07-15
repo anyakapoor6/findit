@@ -3,12 +3,14 @@ import styled, { css } from 'styled-components';
 import { getUserProfile } from '../lib/users';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '../utils/supabaseClient';
+import { createSupabaseClient } from '../utils/supabaseClient';
 import { createPortal } from 'react-dom';
 import { uploadListingImage } from '../lib/storage';
 import { FaPencilAlt } from 'react-icons/fa';
 import { sendEmailNotification } from '../lib/notifications';
 import type { NotificationType } from '../lib/types';
+
+const supabase = createSupabaseClient();
 
 interface ListingCardProps {
 	listing: Listing;

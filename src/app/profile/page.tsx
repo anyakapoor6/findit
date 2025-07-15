@@ -9,7 +9,7 @@ import { fetchUserListings } from '../../lib/listings';
 import { Profile, Listing, User, NotificationType } from '../../lib/types';
 import ListingCard from '../../components/ListingCard';
 import SignInModal from '../../components/SignInModal';
-import { supabase } from '../../utils/supabaseClient';
+import { createSupabaseClient } from '../../utils/supabaseClient';
 import EditListingModal from '../../components/EditListingModal';
 import { useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -261,6 +261,7 @@ export default function ProfilePage() {
 	const [notifyMatches, setNotifyMatches] = useState(true);
 	const [locationData, setLocationData] = useState<{ address: string; lat: number | undefined; lng: number | undefined }>({ address: '', lat: undefined, lng: undefined });
 	const [savingPrefs, setSavingPrefs] = useState(false);
+	const supabase = createSupabaseClient();
 	const fetchFinderProfile = useCallback(async (userId: string) => {
 		if (finderProfiles[userId]) return finderProfiles[userId];
 		const profile = await getUserProfile(userId);

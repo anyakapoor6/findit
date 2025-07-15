@@ -1,4 +1,5 @@
-import { supabase } from '../utils/supabaseClient';
+import { createSupabaseClient } from '../utils/supabaseClient';
+const supabase = createSupabaseClient();
 import { Profile } from './types';
 
 export async function getUserProfile(userId: string): Promise<Profile | null> {

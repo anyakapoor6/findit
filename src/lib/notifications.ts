@@ -1,4 +1,5 @@
-import { supabase } from '../utils/supabaseClient';
+import { createSupabaseClient } from '../utils/supabaseClient';
+const supabase = createSupabaseClient();
 import type { Match, MatchNotification } from './types';
 import type { NotificationType } from './types';
 import { useState, useEffect } from 'react';
