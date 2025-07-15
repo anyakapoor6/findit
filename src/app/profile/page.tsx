@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import styled from 'styled-components';
 import { getCurrentUser, signOut } from '../../lib/auth';
@@ -15,6 +15,7 @@ import { useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import LocationPicker from '../../components/LocationPicker';
 import { sendEmailNotification } from '../../lib/notifications';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -216,7 +217,7 @@ const Warning = styled.div`
   font-size: 1.01rem;
 `;
 
-export default function ProfilePage() {
+function ProfilePageContent() {
 	const [user, setUser] = useState<User | null>(null);
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const [userListings, setUserListings] = useState<Listing[]>([]);
@@ -944,5 +945,13 @@ export default function ProfilePage() {
 				/>
 			)}
 		</Container>
+	);
+}
+
+export default function ProfilePage() {
+	return (
+		<Suspense fallback={<LoadingSpinner />}>
+			<ProfilePageContent />
+		</Suspense>
 	);
 } 

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 // import StyledComponentsRegistry from '../lib/registry';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={geistSans.className}>
+      <body className={inter.className}>
         {/* <StyledComponentsRegistry> */}
         <Navbar />
         <main style={{
