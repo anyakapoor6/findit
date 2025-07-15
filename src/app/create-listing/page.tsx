@@ -147,6 +147,79 @@ const RemoveButton = styled.button`
   cursor: pointer;
   &:hover { background: #b91c1c; }
 `;
+
+// FIXED: Added image cropping modal styles
+const CropModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.9);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+`;
+
+const CropContainer = styled.div`
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const CropArea = styled.div`
+  position: relative;
+  width: 400px;
+  height: 400px;
+  border: 2px solid #2563eb;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 16px 0;
+  background: #f1f5f9;
+`;
+
+const CropImage = styled.img`
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  cursor: move;
+`;
+
+const CropControls = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+`;
+
+const CropButton = styled.button`
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { background: #1d4ed8; }
+  &:disabled { opacity: 0.5; }
+`;
+
+const CancelButton = styled.button`
+  background: #6b7280;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { background: #4b5563; }
+`;
 // Removed unused styled components
 
 async function triggerEmbedding(listingId: string, imageUrl: string, item_type: string, item_subtype: string) {
@@ -186,6 +259,12 @@ export default function CreateListingPage() {
 	const [error, setError] = useState('');
 	const [user, setUser] = useState<User | null>(null);
 	const [showSignIn, setShowSignIn] = useState(false);
+	const [showCropModal, setShowCropModal] = useState(false);
+	const [cropImage, setCropImage] = useState<string>('');
+	const [cropScale, setCropScale] = useState(1);
+	const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
+	const [isDragging, setIsDragging] = useState(false);
+	const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 	const ITEM_TYPES = [
 		{ value: 'electronics', label: 'Electronics', subtypes: ['Phone', 'Laptop', 'Tablet', 'Headphones', 'Other'] },
 		{ value: 'bags', label: 'Bags', subtypes: ['Backpack', 'Handbag', 'Suitcase', 'Wallet', 'Other'] },
@@ -323,19 +402,16 @@ export default function CreateListingPage() {
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (file) {
-			if (!file.type.startsWith('image/')) {
-				setError('Please select an image file');
-				return;
-			}
 			if (file.size > 5 * 1024 * 1024) {
-				setError('Image size must be less than 5MB');
+				setError('Image must be less than 5MB');
 				return;
 			}
 			setSelectedFile(file);
-			setError('');
 			const reader = new FileReader();
 			reader.onload = (e) => {
-				setImagePreview(e.target?.result as string);
+				const result = e.target?.result as string;
+				setCropImage(result);
+				setShowCropModal(true);
 			};
 			reader.readAsDataURL(file);
 		}
@@ -359,7 +435,86 @@ export default function CreateListingPage() {
 	const removeImage = () => {
 		setSelectedFile(null);
 		setImagePreview('');
-		setFormData(prev => ({ ...prev, image_url: '' }));
+		setError('');
+	};
+
+	// FIXED: Added cropping functionality
+	const handleCropMouseDown = (e: React.MouseEvent) => {
+		setIsDragging(true);
+		setDragStart({ x: e.clientX - cropPosition.x, y: e.clientY - cropPosition.y });
+	};
+
+	const handleCropMouseMove = (e: React.MouseEvent) => {
+		if (!isDragging) return;
+		setCropPosition({
+			x: e.clientX - dragStart.x,
+			y: e.clientY - dragStart.y
+		});
+	};
+
+	const handleCropMouseUp = () => {
+		setIsDragging(false);
+	};
+
+	const handleZoomIn = () => {
+		setCropScale(prev => Math.min(prev + 0.1, 3));
+	};
+
+	const handleZoomOut = () => {
+		setCropScale(prev => Math.max(prev - 0.1, 0.5));
+	};
+
+	const handleCropConfirm = () => {
+		// Create a canvas to crop the image
+		const canvas = document.createElement('canvas');
+		const ctx = canvas.getContext('2d');
+		const img = new Image();
+
+		img.onload = () => {
+			const size = 400; // Crop area size
+			canvas.width = size;
+			canvas.height = size;
+
+			if (ctx) {
+				// Calculate the crop area
+				const scaledWidth = img.width * cropScale;
+				const scaledHeight = img.height * cropScale;
+
+				// Calculate the source rectangle
+				const sourceX = Math.max(0, -cropPosition.x / cropScale);
+				const sourceY = Math.max(0, -cropPosition.y / cropScale);
+				const sourceWidth = Math.min(size / cropScale, img.width - sourceX);
+				const sourceHeight = Math.min(size / cropScale, img.height - sourceY);
+
+				ctx.drawImage(
+					img,
+					sourceX, sourceY, sourceWidth, sourceHeight,
+					0, 0, size, size
+				);
+
+				const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+				setImagePreview(croppedDataUrl);
+				setShowCropModal(false);
+
+				// Convert data URL back to file
+				fetch(croppedDataUrl)
+					.then(res => res.blob())
+					.then(blob => {
+						const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' });
+						setSelectedFile(file);
+					});
+			}
+		};
+
+		img.src = cropImage;
+	};
+
+	const handleCropCancel = () => {
+		setShowCropModal(false);
+		setCropImage('');
+		setCropScale(1);
+		setCropPosition({ x: 0, y: 0 });
+		setSelectedFile(null);
 	};
 
 	const handleExtraFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -461,227 +616,284 @@ export default function CreateListingPage() {
 	}
 
 	return (
-		<PageContainer>
-			<FormContainer>
-				<Heading>Create New Listing</Heading>
-				<form onSubmit={handleSubmit}>
-					{/* Status */}
-					<div>
-						<Label>Status *</Label>
-						<StyledSelect
-							name="status"
-							value={formData.status}
-							onChange={handleInputChange}
-							required
-						>
-							<option value="lost">Lost Item</option>
-							<option value="found">Found Item</option>
-						</StyledSelect>
-					</div>
-					{/* Category */}
-					<div>
-						<Label>Category *</Label>
-						<StyledSelect
-							name="item_type"
-							value={formData.item_type || ''}
-							onChange={handleTypeChange}
-							required
-						>
-							<option value="" disabled>Select a category</option>
-							{ITEM_TYPES.map(type => (
-								<option key={type.value} value={type.value}>{type.label}</option>
-							))}
-						</StyledSelect>
-						{formData.item_type === 'other' && (
-							<StyledInput
-								type="text"
-								placeholder="Enter custom category"
-								value={customType}
-								onChange={e => {
-									setCustomType(e.target.value);
-									setFormData(prev => ({ ...prev, item_type: e.target.value }));
-								}}
+		<>
+			<PageContainer>
+				<FormContainer>
+					<Heading>Create New Listing</Heading>
+					<form onSubmit={handleSubmit}>
+						{/* Status */}
+						<div>
+							<Label>Status *</Label>
+							<StyledSelect
+								name="status"
+								value={formData.status}
+								onChange={handleInputChange}
 								required
-								style={{ marginTop: 8 }}
-							/>
-						)}
-					</div>
-					{/* Subcategory */}
-					<div>
-						<Label>Subcategory</Label>
-						<StyledSelect
-							name="item_subtype"
-							value={formData.item_subtype || ''}
-							onChange={handleSubtypeChange}
-							disabled={!formData.item_type || formData.item_type === 'other'}
-						>
-							<option value="">{formData.item_type && formData.item_type !== 'other' ? 'Select a subcategory' : 'Select a category first'}</option>
-							{ITEM_TYPES.find(t => t.value === formData.item_type)?.subtypes.map(sub => (
-								<option key={sub} value={sub}>{sub}</option>
-							))}
-						</StyledSelect>
-						{((formData.item_type === 'other') || (formData.item_subtype === 'Other' && formData.item_type !== 'other')) && (
-							<StyledInput
-								type="text"
-								placeholder="Enter custom subcategory"
-								value={customSubtype}
-								onChange={e => {
-									setCustomSubtype(e.target.value);
-									setFormData(prev => ({ ...prev, item_subtype: e.target.value }));
-								}}
-								required
-								style={{ marginTop: 8 }}
-							/>
-						)}
-					</div>
-					{/* Title */}
-					<div>
-						<Label>Title *</Label>
-						<StyledInput
-							type="text"
-							name="title"
-							value={formData.title}
-							onChange={handleInputChange}
-							placeholder="Brief description of the item"
-							required
-						/>
-					</div>
-					{/* Location */}
-					<div>
-						<LocationPicker
-							value={locationData}
-							onChange={setLocationData}
-							label="Location *"
-							required
-						/>
-					</div>
-					{/* Date */}
-					<div>
-						<Label>Date *</Label>
-						<StyledInput
-							type="date"
-							name="date"
-							value={formData.date}
-							onChange={handleInputChange}
-							required
-						/>
-					</div>
-					{/* Item Details (category-specific) */}
-					{formData.item_type && CATEGORY_FIELDS[formData.item_type] && (
-						<div style={{ margin: '1.2rem 0 0.7rem 0', padding: '1rem', background: '#f8fafc', borderRadius: '0.7rem', border: '1px solid #e0e7ef' }}>
-							<div style={{ fontWeight: 700, fontSize: '1.08rem', marginBottom: 8, color: '#2563eb' }}>Item Details</div>
-							{CATEGORY_FIELDS[formData.item_type].map(field => (
-								<div key={field.name} style={{ marginBottom: 10 }}>
-									<Label>{field.label}</Label>
-									<StyledInput
-										type={field.type || 'text'}
-										name={field.name}
-										value={extraFields[field.name] || ''}
-										onChange={handleExtraFieldChange}
-										placeholder={field.placeholder || ''}
-									/>
-								</div>
-							))}
+							>
+								<option value="lost">Lost Item</option>
+								<option value="found">Found Item</option>
+							</StyledSelect>
 						</div>
-					)}
-					{/* Extra Details/Description */}
-					<div>
-						<Label>Extra Details / Description *</Label>
-						<StyledTextArea
-							name="description"
-							value={formData.description}
-							onChange={handleInputChange}
-							placeholder="Detailed description of the item"
-							rows={4}
-							required
-						/>
-					</div>
-					{/* Image Upload */}
-					<div>
-						<Label>
-							Item Image{formData.status === 'found' ? ' (Required for Found Items)' : ' (Optional)'}
-						</Label>
-						{!imagePreview && (
-							<div style={{ color: '#2563eb', fontSize: '0.97rem', marginBottom: 6 }}>
-								Adding a photo improves your chances of someone recognizing your item.
+						{/* Category */}
+						<div>
+							<Label>Category *</Label>
+							<StyledSelect
+								name="item_type"
+								value={formData.item_type || ''}
+								onChange={handleTypeChange}
+								required
+							>
+								<option value="" disabled>Select a category</option>
+								{ITEM_TYPES.map(type => (
+									<option key={type.value} value={type.value}>{type.label}</option>
+								))}
+							</StyledSelect>
+							{formData.item_type === 'other' && (
+								<StyledInput
+									type="text"
+									placeholder="Enter custom category"
+									value={customType}
+									onChange={e => {
+										setCustomType(e.target.value);
+										setFormData(prev => ({ ...prev, item_type: e.target.value }));
+									}}
+									required
+									style={{ marginTop: 8 }}
+								/>
+							)}
+						</div>
+						{/* Subcategory */}
+						<div>
+							<Label>Subcategory</Label>
+							<StyledSelect
+								name="item_subtype"
+								value={formData.item_subtype || ''}
+								onChange={handleSubtypeChange}
+								disabled={!formData.item_type || formData.item_type === 'other'}
+							>
+								<option value="">{formData.item_type && formData.item_type !== 'other' ? 'Select a subcategory' : 'Select a category first'}</option>
+								{ITEM_TYPES.find(t => t.value === formData.item_type)?.subtypes.map(sub => (
+									<option key={sub} value={sub}>{sub}</option>
+								))}
+							</StyledSelect>
+							{((formData.item_type === 'other') || (formData.item_subtype === 'Other' && formData.item_type !== 'other')) && (
+								<StyledInput
+									type="text"
+									placeholder="Enter custom subcategory"
+									value={customSubtype}
+									onChange={e => {
+										setCustomSubtype(e.target.value);
+										setFormData(prev => ({ ...prev, item_subtype: e.target.value }));
+									}}
+									required
+									style={{ marginTop: 8 }}
+								/>
+							)}
+						</div>
+						{/* Title */}
+						<div>
+							<Label>Title *</Label>
+							<StyledInput
+								type="text"
+								name="title"
+								value={formData.title}
+								onChange={handleInputChange}
+								placeholder="Brief description of the item"
+								required
+							/>
+						</div>
+						{/* Location */}
+						<div>
+							<LocationPicker
+								value={locationData}
+								onChange={setLocationData}
+								label="Location *"
+								required
+							/>
+						</div>
+						{/* Date */}
+						<div>
+							<Label>Date *</Label>
+							<StyledInput
+								type="date"
+								name="date"
+								value={formData.date}
+								onChange={handleInputChange}
+								required
+							/>
+						</div>
+						{/* Item Details (category-specific) */}
+						{formData.item_type && CATEGORY_FIELDS[formData.item_type] && (
+							<div style={{ margin: '1.2rem 0 0.7rem 0', padding: '1rem', background: '#f8fafc', borderRadius: '0.7rem', border: '1px solid #e0e7ef' }}>
+								<div style={{ fontWeight: 700, fontSize: '1.08rem', marginBottom: 8, color: '#2563eb' }}>Item Details</div>
+								{CATEGORY_FIELDS[formData.item_type].map(field => (
+									<div key={field.name} style={{ marginBottom: 10 }}>
+										<Label>{field.label}</Label>
+										<StyledInput
+											type={field.type || 'text'}
+											name={field.name}
+											value={extraFields[field.name] || ''}
+											onChange={handleExtraFieldChange}
+											placeholder={field.placeholder || ''}
+										/>
+									</div>
+								))}
 							</div>
 						)}
-						{!imagePreview ? (
-							<UploadBox
-								onDragOver={e => {
-									e.preventDefault();
-									e.stopPropagation();
-								}}
-								onDrop={e => {
-									e.preventDefault();
-									e.stopPropagation();
-									if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-										const file = e.dataTransfer.files[0];
-										if (!file.type.startsWith('image/')) {
-											setError('Please select an image file');
-											return;
+						{/* Extra Details/Description */}
+						<div>
+							<Label>Extra Details / Description *</Label>
+							<StyledTextArea
+								name="description"
+								value={formData.description}
+								onChange={handleInputChange}
+								placeholder="Detailed description of the item"
+								rows={4}
+								required
+							/>
+						</div>
+						{/* Image Upload */}
+						<div>
+							<Label>
+								Item Image{formData.status === 'found' ? ' (Required for Found Items)' : ' (Optional)'}
+							</Label>
+							{!imagePreview && (
+								<div style={{ color: '#2563eb', fontSize: '0.97rem', marginBottom: 6 }}>
+									Adding a photo improves your chances of someone recognizing your item.
+								</div>
+							)}
+							{!imagePreview ? (
+								<UploadBox
+									onDragOver={e => {
+										e.preventDefault();
+										e.stopPropagation();
+									}}
+									onDrop={e => {
+										e.preventDefault();
+										e.stopPropagation();
+										if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+											const file = e.dataTransfer.files[0];
+											if (!file.type.startsWith('image/')) {
+												setError('Please select an image file');
+												return;
+											}
+											if (file.size > 5 * 1024 * 1024) {
+												setError('Image size must be less than 5MB');
+												return;
+											}
+											setSelectedFile(file);
+											setError('');
+											const reader = new FileReader();
+											reader.onload = (ev) => {
+												setImagePreview(ev.target?.result as string);
+											};
+											reader.readAsDataURL(file);
 										}
-										if (file.size > 5 * 1024 * 1024) {
-											setError('Image size must be less than 5MB');
-											return;
-										}
-										setSelectedFile(file);
-										setError('');
-										const reader = new FileReader();
-										reader.onload = (ev) => {
-											setImagePreview(ev.target?.result as string);
-										};
-										reader.readAsDataURL(file);
-									}
-								}}
+									}}
+								>
+									<input
+										type="file"
+										accept="image/*"
+										onChange={handleFileChange}
+										style={{ display: 'none' }}
+										id="image-upload"
+									/>
+									<UploadLabel htmlFor="image-upload">
+										Click to upload or drag and drop
+									</UploadLabel>
+									<div style={{ color: '#666', fontSize: '0.95rem' }}>PNG, JPG, GIF up to 5MB</div>
+									{formData.status === 'found' && (
+										<div style={{ color: '#dc2626', fontSize: '0.95rem', marginTop: '0.5rem' }}>
+											* Required for found items
+										</div>
+									)}
+									{formData.status === 'lost' && (
+										<div style={{ color: '#2563eb', fontSize: '0.95rem', marginTop: '0.5rem' }}>
+											Adding a picture helps others identify your lost item. If you don't have a photo, consider uploading a similar image from Google or the product website.
+										</div>
+									)}
+								</UploadBox>
+							) : (
+								<UploadBox>
+									<UploadedImage src={imagePreview} alt="Preview" />
+									<RemoveButton type="button" onClick={removeImage}>Remove</RemoveButton>
+									<div style={{ color: '#666', fontSize: '0.95rem', marginTop: '0.5rem' }}>Selected: {selectedFile?.name}</div>
+								</UploadBox>
+							)}
+						</div>
+						{/* Error Message */}
+						{error && <ErrorMsg>{error}</ErrorMsg>}
+						{/* Buttons */}
+						<div style={{ display: 'flex', gap: '1rem', paddingTop: '0.5rem' }}>
+							<SubmitButton type="submit" disabled={loading}>
+								{loading ? 'Submitting...' : 'Create Listing'}
+							</SubmitButton>
+							<button
+								type="button"
+								onClick={() => router.back()}
+								style={{ padding: '0.9rem 2rem', border: '1px solid #bbb', borderRadius: '0.5rem', background: '#f1f5f9', color: '#111', fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer' }}
 							>
-								<input
-									type="file"
-									accept="image/*"
-									onChange={handleFileChange}
-									style={{ display: 'none' }}
-									id="image-upload"
-								/>
-								<UploadLabel htmlFor="image-upload">
-									Click to upload or drag and drop
-								</UploadLabel>
-								<div style={{ color: '#666', fontSize: '0.95rem' }}>PNG, JPG, GIF up to 5MB</div>
-								{formData.status === 'found' && (
-									<div style={{ color: '#dc2626', fontSize: '0.95rem', marginTop: '0.5rem' }}>
-										* Required for found items
-									</div>
-								)}
-								{formData.status === 'lost' && (
-									<div style={{ color: '#2563eb', fontSize: '0.95rem', marginTop: '0.5rem' }}>
-										Adding a picture helps others identify your lost item. If you don't have a photo, consider uploading a similar image from Google or the product website.
-									</div>
-								)}
-							</UploadBox>
-						) : (
-							<UploadBox>
-								<UploadedImage src={imagePreview} alt="Preview" />
-								<RemoveButton type="button" onClick={removeImage}>Remove</RemoveButton>
-								<div style={{ color: '#666', fontSize: '0.95rem', marginTop: '0.5rem' }}>Selected: {selectedFile?.name}</div>
-							</UploadBox>
-						)}
-					</div>
-					{/* Error Message */}
-					{error && <ErrorMsg>{error}</ErrorMsg>}
-					{/* Buttons */}
-					<div style={{ display: 'flex', gap: '1rem', paddingTop: '0.5rem' }}>
-						<SubmitButton type="submit" disabled={loading}>
-							{loading ? 'Submitting...' : 'Create Listing'}
-						</SubmitButton>
-						<button
-							type="button"
-							onClick={() => router.back()}
-							style={{ padding: '0.9rem 2rem', border: '1px solid #bbb', borderRadius: '0.5rem', background: '#f1f5f9', color: '#111', fontWeight: 600, fontSize: '1.1rem', cursor: 'pointer' }}
+								Cancel
+							</button>
+						</div>
+					</form>
+				</FormContainer>
+			</PageContainer>
+
+			{/* FIXED: Image cropping modal */}
+			{showCropModal && (
+				<CropModal>
+					<CropContainer>
+						<h3 style={{ margin: '0 0 16px 0', fontSize: '1.3rem', fontWeight: 600 }}>Crop & Adjust Image</h3>
+						<p style={{ margin: '0 0 16px 0', color: '#666', textAlign: 'center' }}>
+							Drag to move, use zoom controls to adjust the crop area
+						</p>
+						<CropArea
+							onMouseDown={handleCropMouseDown}
+							onMouseMove={handleCropMouseMove}
+							onMouseUp={handleCropMouseUp}
+							onMouseLeave={handleCropMouseUp}
 						>
-							Cancel
-						</button>
-					</div>
-				</form>
-			</FormContainer>
-		</PageContainer>
+							<CropImage
+								src={cropImage}
+								alt="Crop preview"
+								style={{
+									transform: `scale(${cropScale}) translate(${cropPosition.x / cropScale}px, ${cropPosition.y / cropScale}px)`,
+									transformOrigin: 'center',
+									userSelect: 'none',
+									pointerEvents: isDragging ? 'none' : 'auto'
+								}}
+							/>
+						</CropArea>
+						<CropControls>
+							<CropButton onClick={handleZoomOut} disabled={cropScale <= 0.5}>
+								🔍−
+							</CropButton>
+							<span style={{ display: 'flex', alignItems: 'center', padding: '0 12px', fontWeight: 600 }}>
+								{Math.round(cropScale * 100)}%
+							</span>
+							<CropButton onClick={handleZoomIn} disabled={cropScale >= 3}>
+								🔍+
+							</CropButton>
+						</CropControls>
+						<CropControls style={{ marginTop: '8px' }}>
+							<CropButton onClick={handleCropConfirm}>
+								✓ Apply Crop
+							</CropButton>
+							<CancelButton onClick={handleCropCancel}>
+								✕ Cancel
+							</CancelButton>
+						</CropControls>
+					</CropContainer>
+				</CropModal>
+			)}
+
+			{/* FIXED: Sign-in modal */}
+			<SignInModal
+				open={showSignIn}
+				onClose={handleSignInClose}
+				onSignIn={handleSignInSuccess}
+			/>
+		</>
 	);
 }

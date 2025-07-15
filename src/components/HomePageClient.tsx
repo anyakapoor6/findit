@@ -193,7 +193,7 @@ export default function HomePageClient() {
 		if (userChecked && !userRef.current) {
 			// Only attach scroll listener for non-signed-in users
 			const handleScroll = () => {
-				if (window.scrollY > 400) {
+				if (window.scrollY > 400 && !showSignIn) {
 					setShowSignIn(true);
 					window.removeEventListener('scroll', handleScroll);
 				}
@@ -201,7 +201,7 @@ export default function HomePageClient() {
 			window.addEventListener('scroll', handleScroll);
 			return () => window.removeEventListener('scroll', handleScroll);
 		}
-	}, [userChecked]);
+	}, [userChecked, showSignIn]);
 
 	useEffect(() => {
 		if (highlightedRef.current) {

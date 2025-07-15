@@ -165,9 +165,10 @@ const Placeholder = styled.div`
 `;
 
 const PlaceholderEmoji = styled.span`
-  font-size: 2.5rem;
+  font-size: 3rem;
   line-height: 1;
   margin-bottom: 0.5rem;
+  display: block;
 `;
 
 const PlaceholderText = styled.div`
@@ -177,7 +178,7 @@ const PlaceholderText = styled.div`
   font-weight: 500;
 `;
 
-// FIXED: Updated image container with increased height
+// FIXED: Updated image container with increased height and consistent sizing
 const ImageBox = styled.div`
   width: 100%;
   height: 220px;
@@ -191,12 +192,14 @@ const ImageBox = styled.div`
   justify-content: center;
   background: #fff;
   cursor: pointer;
+  position: relative;
 `;
 
 const CardImage = styled.img`
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 `;
 
 // FIXED: Updated header to include title and status badge in same row
@@ -579,18 +582,14 @@ function formatDateUS(dateStr: string) {
 }
 
 function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClose: () => void, listing: any }) {
-	const [user, setUser] = useState<any>(null);
 	const [resolving, setResolving] = useState(false);
+	const [user, setUser] = useState<any>(null);
+
 	useEffect(() => {
+		// Get current user
 		supabase.auth.getSession().then(({ data }) => {
 			setUser(data.session?.user || null);
 		});
-		const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-			setUser(session?.user || null);
-		});
-		return () => {
-			listener?.subscription.unsubscribe();
-		};
 	}, []);
 
 	const canResolve = user && listing.user_id === user.id && (listing.status === 'lost' || listing.status === 'found');
@@ -605,9 +604,42 @@ function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClos
 
 	if (!open) return null;
 	return (
-		<div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-			<div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, maxWidth: 500, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', color: '#111', position: 'relative' }}>
-				<button onClick={onClose} style={{ position: 'absolute', top: 12, right: 12, background: '#f1f5f9', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', fontWeight: 700 }}>Close</button>
+		<div style={{
+			position: 'fixed',
+			top: 0,
+			left: 0,
+			width: '100vw',
+			height: '100vh',
+			background: 'rgba(0,0,0,0.5)',
+			zIndex: 2000,
+			display: 'flex',
+			alignItems: 'center',
+			justifyContent: 'center',
+			backdropFilter: 'blur(4px)'
+		}}>
+			<div style={{
+				background: '#fff',
+				borderRadius: 12,
+				padding: 32,
+				minWidth: 320,
+				maxWidth: 500,
+				maxHeight: '90vh',
+				overflowY: 'auto',
+				boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+				color: '#111',
+				position: 'relative'
+			}}>
+				<button onClick={onClose} style={{
+					position: 'absolute',
+					top: 12,
+					right: 12,
+					background: '#f1f5f9',
+					border: 'none',
+					borderRadius: 8,
+					padding: 6,
+					cursor: 'pointer',
+					fontWeight: 700
+				}}>Close</button>
 				<h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: 16 }}>{listing.title}</h2>
 				<div style={{ marginBottom: 12 }}><b>Status:</b> {listing.status}</div>
 				<div style={{ marginBottom: 12 }}><b>Category:</b> {listing.item_type}</div>
@@ -703,6 +735,67 @@ function ShareSheet({ open, onClose, listing }: { open: boolean, onClose: () => 
 	);
 }
 
+function ImageViewModal({ open, onClose, imageUrl, title }: { open: boolean, onClose: () => void, imageUrl: string, title: string }) {
+	if (!open) return null;
+
+	return (
+		<div style={{
+			position: 'fixed',
+			top: 0,
+			left: 0,
+			width: '100vw',
+			height: '100vh',
+			background: 'rgba(0,0,0,0.9)',
+			zIndex: 3000,
+			display: 'flex',
+			alignItems: 'center',
+			justifyContent: 'center',
+			backdropFilter: 'blur(8px)'
+		}}>
+			<div style={{
+				position: 'relative',
+				maxWidth: '90vw',
+				maxHeight: '90vh',
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center'
+			}}>
+				<button onClick={onClose} style={{
+					position: 'absolute',
+					top: -40,
+					right: 0,
+					background: 'rgba(255,255,255,0.2)',
+					color: '#fff',
+					border: 'none',
+					borderRadius: 8,
+					padding: '8px 12px',
+					cursor: 'pointer',
+					fontWeight: 700,
+					fontSize: '1.1rem'
+				}}>✕</button>
+				<h3 style={{
+					color: '#fff',
+					marginBottom: 16,
+					fontSize: '1.2rem',
+					fontWeight: 600,
+					textAlign: 'center'
+				}}>{title}</h3>
+				<img
+					src={imageUrl}
+					alt={title}
+					style={{
+						maxWidth: '100%',
+						maxHeight: '70vh',
+						objectFit: 'contain',
+						borderRadius: 8,
+						boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+					}}
+				/>
+			</div>
+		</div>
+	);
+}
+
 export default function ListingCard({
 	listing,
 	onView,
@@ -721,6 +814,7 @@ export default function ListingCard({
 	const router = useRouter();
 	const [showShareSheet, setShowShareSheet] = useState(false);
 	const [showFullLocation, setShowFullLocation] = useState(false);
+	const [showImageView, setShowImageView] = useState(false);
 	const condensedLocation = listing.location?.split(',')[0] || '';
 
 	useEffect(() => {
@@ -793,19 +887,17 @@ export default function ListingCard({
 			$isResolved={listing.status === 'resolved'}
 			onClick={() => setShowDetails(true)}
 		>
-			{/* FIXED: Clickable image area */}
-			<ImageBox onClick={(e) => { e.stopPropagation(); setShowDetails(true); }}>
-				{listing.image_url ? (
+			{/* FIXED: Image section with click to view */}
+			{listing.image_url ? (
+				<ImageBox onClick={() => setShowImageView(true)}>
 					<CardImage src={listing.image_url} alt={listing.title} />
-				) : (
-					<Placeholder>
-						<PlaceholderEmoji>
-							{getEmojiForCategory(listing.item_type, listing.item_subtype)}
-						</PlaceholderEmoji>
-						<PlaceholderText>No image provided</PlaceholderText>
-					</Placeholder>
-				)}
-			</ImageBox>
+				</ImageBox>
+			) : (
+				<Placeholder>
+					<PlaceholderEmoji>{getEmojiForCategory(listing.item_type)}</PlaceholderEmoji>
+					<PlaceholderText>No image available</PlaceholderText>
+				</Placeholder>
+			)}
 			{/* FIXED: Title and Status badge in same row */}
 			<CardHeader>
 				<TitleSection>
@@ -834,7 +926,7 @@ export default function ListingCard({
 			<Info>
 				<InfoRow>
 					<InfoLabel>
-						📍 Location:
+						📍
 					</InfoLabel>
 					<InfoValue>
 						{showFullLocation ? (
@@ -866,7 +958,7 @@ export default function ListingCard({
 				</InfoRow>
 				<InfoRow>
 					<InfoLabel>
-						📅 Date:
+						📅
 					</InfoLabel>
 					<InfoValue>{listing.date ? new Date(listing.date).toLocaleDateString() : ''}</InfoValue>
 				</InfoRow>
@@ -913,6 +1005,7 @@ export default function ListingCard({
 			<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
 			<ListingDetailsModal open={showDetails} onClose={() => setShowDetails(false)} listing={listing} />
 			<ShareSheet open={showShareSheet} onClose={() => setShowShareSheet(false)} listing={listing} />
+			<ImageViewModal open={showImageView} onClose={() => setShowImageView(false)} imageUrl={listing.image_url || ''} title={listing.title} />
 
 			{showActions && (
 				<Actions>
