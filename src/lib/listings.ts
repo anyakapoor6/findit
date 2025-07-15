@@ -1,9 +1,9 @@
 import { createSupabaseClient } from '../utils/supabaseClient';
-const supabase = createSupabaseClient();
 import type { Listing, CreateListingData } from './types';
 
 // Fetch all listings
 export async function fetchListings(): Promise<Listing[]> {
+	const supabase = createSupabaseClient();
 	const { data, error } = await supabase
 		.from('listings')
 		.select('*')
@@ -15,6 +15,7 @@ export async function fetchListings(): Promise<Listing[]> {
 
 // Fetch listings by status (lost or found)
 export async function fetchListingsByStatus(status: 'lost' | 'found'): Promise<Listing[]> {
+	const supabase = createSupabaseClient();
 	const { data, error } = await supabase
 		.from('listings')
 		.select('*')
@@ -27,6 +28,7 @@ export async function fetchListingsByStatus(status: 'lost' | 'found'): Promise<L
 
 // Fetch listings by user ID
 export async function fetchUserListings(userId: string): Promise<Listing[]> {
+	const supabase = createSupabaseClient();
 	const { data, error } = await supabase
 		.from('listings')
 		.select('*')
@@ -39,6 +41,7 @@ export async function fetchUserListings(userId: string): Promise<Listing[]> {
 
 // Add a new listing
 export async function addListing(listingData: CreateListingData): Promise<Listing> {
+	const supabase = createSupabaseClient();
 	const { data: { user } } = await supabase.auth.getUser();
 	if (!user) throw new Error('User not authenticated');
 
@@ -54,6 +57,7 @@ export async function addListing(listingData: CreateListingData): Promise<Listin
 
 // Update a listing
 export async function updateListing(id: string, updates: Partial<CreateListingData>): Promise<Listing> {
+	const supabase = createSupabaseClient();
 	const { data, error } = await supabase
 		.from('listings')
 		.update(updates)
@@ -67,6 +71,7 @@ export async function updateListing(id: string, updates: Partial<CreateListingDa
 
 // Delete a listing
 export async function deleteListing(id: string): Promise<void> {
+	const supabase = createSupabaseClient();
 	const { error } = await supabase
 		.from('listings')
 		.delete()
@@ -77,6 +82,7 @@ export async function deleteListing(id: string): Promise<void> {
 
 // Get a single listing by ID
 export async function getListing(id: string): Promise<Listing> {
+	const supabase = createSupabaseClient();
 	const { data, error } = await supabase
 		.from('listings')
 		.select('*')

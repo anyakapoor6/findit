@@ -1,8 +1,15 @@
 import { createSupabaseClient } from '../utils/supabaseClient';
-const supabase = createSupabaseClient();
-import { Profile } from './types';
+import type { Profile } from './types';
+
+export interface UserPreferences {
+	user_id: string;
+	show_phone_on_claim: boolean;
+	show_email_on_claim: boolean;
+	created_at?: string;
+}
 
 export async function getUserProfile(userId: string): Promise<Profile | null> {
+	const supabase = createSupabaseClient();
 	try {
 		const { data, error } = await supabase
 			.from('users')
@@ -15,7 +22,7 @@ export async function getUserProfile(userId: string): Promise<Profile | null> {
 			return null;
 		}
 
-		return data;
+		return data as Profile;
 	} catch (error) {
 		console.error('Error fetching user profile:', error);
 		return null;
@@ -23,6 +30,7 @@ export async function getUserProfile(userId: string): Promise<Profile | null> {
 }
 
 export async function createUserProfile(userId: string, email: string, name?: string, phone?: string): Promise<Profile | null> {
+	const supabase = createSupabaseClient();
 	try {
 		const { data, error } = await supabase
 			.from('users')
@@ -40,7 +48,7 @@ export async function createUserProfile(userId: string, email: string, name?: st
 			return null;
 		}
 
-		return data;
+		return data as Profile;
 	} catch (error) {
 		console.error('Error creating user profile:', error);
 		return null;
@@ -48,6 +56,7 @@ export async function createUserProfile(userId: string, email: string, name?: st
 }
 
 export async function updateUserProfile(userId: string, updates: Partial<Profile> & { phone_number?: string }): Promise<Profile | null> {
+	const supabase = createSupabaseClient();
 	try {
 		console.log('Updating profile for user:', userId, 'with updates:', updates);
 
@@ -67,7 +76,7 @@ export async function updateUserProfile(userId: string, updates: Partial<Profile
 		}
 
 		console.log('Profile updated successfully:', data);
-		return data;
+		return data as Profile;
 	} catch (error) {
 		console.error('Error updating user profile:', error);
 		return null;
@@ -75,6 +84,7 @@ export async function updateUserProfile(userId: string, updates: Partial<Profile
 }
 
 export async function syncUserProfile(userId: string, email: string, name?: string, phone?: string): Promise<Profile | null> {
+	const supabase = createSupabaseClient();
 	try {
 		// First try to get existing profile
 		let profile = await getUserProfile(userId);
@@ -95,14 +105,8 @@ export async function syncUserProfile(userId: string, email: string, name?: stri
 }
 
 // User Preferences
-export interface UserPreferences {
-	user_id: string;
-	show_phone_on_claim: boolean;
-	show_email_on_claim: boolean;
-	created_at?: string;
-}
-
 export async function getUserPreferences(userId: string): Promise<UserPreferences | null> {
+	const supabase = createSupabaseClient();
 	try {
 		const { data, error } = await supabase
 			.from('user_preferences')
@@ -114,27 +118,20 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
 			console.error('Error fetching user preferences:', error);
 			return null;
 		}
-		return data;
+		return data as UserPreferences;
 	} catch (error) {
 		console.error('Error fetching user preferences:', error);
 		return null;
 	}
 }
 
-export async function upsertUserPreferences(userId: string, prefs: Partial<UserPreferences>): Promise<UserPreferences | null> {
+export async function upsertUserPreferences(userId: string, prefs: Partial<UserPreferences>): Promise<void> {
+	const supabase = createSupabaseClient();
 	try {
-		const { data, error } = await supabase
+		await supabase
 			.from('user_preferences')
-			.upsert({ user_id: userId, ...prefs }, { onConflict: 'user_id' })
-			.select()
-			.single();
-		if (error) {
-			console.error('Error upserting user preferences:', error);
-			return null;
-		}
-		return data;
+			.upsert({ ...prefs, user_id: userId });
 	} catch (error) {
 		console.error('Error upserting user preferences:', error);
-		return null;
 	}
 } 

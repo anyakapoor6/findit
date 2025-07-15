@@ -1,10 +1,10 @@
 import { createSupabaseClient } from '../utils/supabaseClient';
-const supabase = createSupabaseClient();
 import type { User, AuthState } from './types';
 import { syncUserProfile } from './users';
 
 // Sign up with email and password
 export async function signUp(email: string, password: string, name?: string, phone?: string): Promise<{ user: User | null; error: string | null }> {
+	const supabase = createSupabaseClient();
 	const { data, error } = await supabase.auth.signUp({
 		email,
 		password,
@@ -38,6 +38,7 @@ export async function signUp(email: string, password: string, name?: string, pho
 
 // Sign in with email and password
 export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
+	const supabase = createSupabaseClient();
 	const { data, error } = await supabase.auth.signInWithPassword({
 		email,
 		password,
@@ -66,12 +67,14 @@ export async function signIn(email: string, password: string): Promise<{ user: U
 
 // Sign out
 export async function signOut(): Promise<{ error: string | null }> {
+	const supabase = createSupabaseClient();
 	const { error } = await supabase.auth.signOut();
 	return { error: error?.message || null };
 }
 
 // Get current user
 export async function getCurrentUser(): Promise<User | null> {
+	const supabase = createSupabaseClient();
 	const { data: { user } } = await supabase.auth.getUser();
 
 	if (!user) return null;
@@ -85,12 +88,14 @@ export async function getCurrentUser(): Promise<User | null> {
 
 // Listen to auth state changes
 export function onAuthStateChange(callback: (authState: AuthState) => void) {
+	const supabase = createSupabaseClient();
 	return supabase.auth.onAuthStateChange(async (event, session) => {
 		if (event === 'SIGNED_IN' && session?.user) {
 			// Sync user profile when they sign in
 			console.log('Auth state change: user signed in, syncing profile');
 			const name = session.user.user_metadata?.name;
-			await syncUserProfile(session.user.id, session.user.email!, name);
+			const phone = session.user.user_metadata?.phone_number;
+			await syncUserProfile(session.user.id, session.user.email!, name, phone);
 
 			callback({
 				user: {
