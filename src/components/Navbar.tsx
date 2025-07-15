@@ -147,6 +147,28 @@ const NotifDot = styled.span`
   display: inline-block;
 `;
 
+// FIXED: Added loading skeleton for navbar
+const NavSkeleton = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 2.5rem;
+`;
+
+const SkeletonLink = styled.div`
+  width: 80px;
+  height: 2rem;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 0.5rem;
+  
+  @keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+`;
+
 export default function Navbar() {
   const router = useRouter();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -154,20 +176,42 @@ export default function Navbar() {
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifUser, setNotifUser] = useState<any>(null);
   const [hasUnread, setHasUnread] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch current user for notifications
+  // FIXED: Client-side only effect to prevent hydration issues
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setNotifUser(data.session?.user || null);
-    });
+    setIsClient(true);
+  }, []);
+
+  // FIXED: Auth check effect with proper loading state
+  useEffect(() => {
+    if (!isClient) return;
+
+    const checkAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        setNotifUser(data.session?.user || null);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setNotifUser(null);
+      } finally {
+        setAuthChecked(true);
+      }
+    };
+
+    checkAuth();
+
+    // Subscribe to auth changes
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setNotifUser(session?.user || null);
     });
+
     return () => {
       listener?.subscription.unsubscribe();
     };
-  }, []);
+  }, [isClient]);
 
   // Real-time notification subscription
   useEffect(() => {
@@ -239,6 +283,24 @@ export default function Navbar() {
     setNotifications((prev) => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
     await supabase.from('notifications').update({ is_read: true }).eq('id', notifId);
   };
+
+  // FIXED: Show loading skeleton during initial hydration
+  if (!isClient || !authChecked) {
+    return (
+      <Nav>
+        <NavContainer>
+          <Logo>FindIt</Logo>
+          <NavSkeleton>
+            <SkeletonLink />
+            <SkeletonLink />
+            <SkeletonLink />
+            <SkeletonLink />
+            <SkeletonLink />
+          </NavSkeleton>
+        </NavContainer>
+      </Nav>
+    );
+  }
 
   return (
     <Nav>

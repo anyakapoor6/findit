@@ -772,6 +772,8 @@ export default function ListingCard({
 					<FaPencilAlt />
 				</EditIconButton>
 			)}
+			{/* FIXED: Added initials avatar icon */}
+			<InitialsBox>{initials}</InitialsBox>
 			<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
 			{showActions && (
 				<Actions>
