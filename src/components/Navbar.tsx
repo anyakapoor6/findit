@@ -28,8 +28,14 @@ const NavContainer = styled.div`
   justify-content: space-between;
   gap: 1rem;
 
+  @media (max-width: 768px) {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
   @media (max-width: 640px) {
-    padding: 1rem;
+    padding: 0.5rem 1rem;
   }
 `
 
@@ -51,8 +57,16 @@ const NavLinks = styled.div`
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  justify-content: center;
+  
   @media (min-width: 640px) {
     gap: 1rem;
+  }
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+    gap: 0.25rem;
   }
 `;
 const Spacer = styled.div`
@@ -68,6 +82,13 @@ const NavLink = styled(Link) <{ $variant?: 'default' | 'primary'; $isActive?: bo
   text-decoration: none;
   color: #111;
   cursor: pointer;
+  white-space: nowrap;
+  
+  @media (max-width: 768px) {
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+  }
+  
   ${({ $variant = 'default', $isActive }) => {
     switch ($variant) {
       case 'default':
@@ -127,6 +148,12 @@ const NotifDropdown = styled.div`
   border: 1.5px solid #dbeafe;
   z-index: 100;
   padding: 0.5rem 0;
+  
+  @media (max-width: 768px) {
+    right: -1rem;
+    min-width: 280px;
+    max-width: calc(100vw - 2rem);
+  }
 `;
 const NotifItem = styled.div<{ $unread?: boolean }>`
   padding: 0.85rem 1.2rem;

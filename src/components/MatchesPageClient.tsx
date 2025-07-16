@@ -13,6 +13,10 @@ const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1rem;
+  
+  @media (max-width: 768px) {
+    padding: 1rem 0.5rem;
+  }
 `;
 const Title = styled.h1`
   font-size: 2.5rem;
@@ -35,6 +39,12 @@ const StatsContainer = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
 `;
 const StatCard = styled.div`
   background: #fff;
@@ -43,6 +53,10 @@ const StatCard = styled.div`
   box-shadow: 0 4px 16px rgba(0,0,0,0.08);
   border: 1px solid #dbeafe;
   text-align: center;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
 `;
 const StatNumber = styled.div`
   font-size: 2rem;
@@ -156,6 +170,35 @@ const CreateListingButton = styled.button`
   &:hover {
     background: #1d4ed8;
   }
+`;
+
+const MatchLayout = styled.div`
+  margin-bottom: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  
+  @media (min-width: 768px) {
+    flex-direction: row;
+    gap: 2.5rem;
+  }
+`;
+
+const MatchCard = styled.div`
+  width: 100%;
+  max-width: 300px;
+`;
+
+const MatchCenter = styled.div`
+  width: 100%;
+  max-width: 220px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 `;
 
 // Filter out matches for resolved listings and only show matches with the same category
@@ -408,13 +451,13 @@ export default function MatchesPageClient() {
 								extra_details: match.listing_extra_details || undefined
 							};
 							return (
-								<div key={match.match_id} style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2.5rem' }}>
+								<MatchLayout key={match.match_id}>
 									{/* User's listing */}
-									<div style={{ flex: 1, minWidth: 0 }}>
+									<MatchCard>
 										<ListingCard listing={left} showActions={false} />
-									</div>
+									</MatchCard>
 									{/* Match score and reasons in the center */}
-									<div style={{ flex: '0 0 220px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+									<MatchCenter>
 										<MatchScore $score={match.score} style={{ fontSize: '1.3rem', marginBottom: 8 }}>
 											<ScoreBar $score={match.score} />
 											{Math.round(match.score * 100)}% Match
@@ -426,12 +469,12 @@ export default function MatchesPageClient() {
 												))}
 											</MatchReasons>
 										)}
-									</div>
+									</MatchCenter>
 									{/* Matching listing */}
-									<div style={{ flex: 1, minWidth: 0 }}>
+									<MatchCard>
 										<ListingCard listing={right} showActions={false} />
-									</div>
-								</div>
+									</MatchCard>
+								</MatchLayout>
 							);
 						})}
 					</MatchGroup>

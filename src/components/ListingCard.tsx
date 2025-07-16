@@ -1103,6 +1103,13 @@ export default function ListingCard({
 	const handleImageClick = (e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
+
+		// FIXED: Dispatch listing-clicked event for unauthenticated users to trigger sign-in
+		if (!user) {
+			window.dispatchEvent(new CustomEvent('listing-clicked'));
+			return;
+		}
+
 		closeAllModals();
 		setShowImageView(true);
 	};
@@ -1110,6 +1117,13 @@ export default function ListingCard({
 	const handleCardClick = (e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
+
+		// FIXED: Dispatch listing-clicked event for unauthenticated users to trigger sign-in
+		if (!user) {
+			window.dispatchEvent(new CustomEvent('listing-clicked'));
+			return;
+		}
+
 		closeAllModals();
 		setShowDetails(true);
 	};

@@ -188,18 +188,34 @@ export default function HomePageClient() {
 		checkUser();
 	}, []);
 
+	// FIXED: Remove scroll-based sign-in trigger - now only triggers on listing clicks
+	// useEffect(() => {
+	// 	// MOVED: Early return logic inside the effect to avoid breaking hooks order
+	// 	if (userChecked && !userRef.current) {
+	// 		// Only attach scroll listener for non-signed-in users
+	// 		const handleScroll = () => {
+	// 			if (window.scrollY > 400 && !showSignIn) {
+	// 				setShowSignIn(true);
+	// 				window.removeEventListener('scroll', handleScroll);
+	// 			}
+	// 		};
+	// 		window.addEventListener('scroll', handleScroll);
+	// 		return () => window.removeEventListener('scroll', handleScroll);
+	// 	}
+	// }, [userChecked, showSignIn]);
+
+	// FIXED: Add click-based sign-in trigger for listing interactions
 	useEffect(() => {
-		// MOVED: Early return logic inside the effect to avoid breaking hooks order
 		if (userChecked && !userRef.current) {
-			// Only attach scroll listener for non-signed-in users
-			const handleScroll = () => {
-				if (window.scrollY > 400 && !showSignIn) {
+			const handleListingClick = () => {
+				if (!showSignIn) {
 					setShowSignIn(true);
-					window.removeEventListener('scroll', handleScroll);
 				}
 			};
-			window.addEventListener('scroll', handleScroll);
-			return () => window.removeEventListener('scroll', handleScroll);
+
+			// Listen for listing click events
+			window.addEventListener('listing-clicked', handleListingClick);
+			return () => window.removeEventListener('listing-clicked', handleListingClick);
 		}
 	}, [userChecked, showSignIn]);
 
@@ -248,6 +264,19 @@ export default function HomePageClient() {
 					<Subheading>
 						FindIt is a cross-platform Lost & Found platform. Report lost or found items, browse listings, and help reunite people with their belongings.
 					</Subheading>
+					<p style={{
+						color: '#666',
+						fontSize: '0.9rem',
+						marginTop: '1rem',
+						padding: '0.75rem 1rem',
+						background: '#f8fafc',
+						borderRadius: '0.5rem',
+						border: '1px solid #e2e8f0',
+						maxWidth: '400px',
+						margin: '1rem auto 0 auto'
+					}}>
+						💻 <strong>Recommended:</strong> View on computer for better experience
+					</p>
 				</div>
 				{/* Search & Filter UI */}
 				<FilterBar>

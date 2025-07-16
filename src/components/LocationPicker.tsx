@@ -1,5 +1,63 @@
 import React, { useEffect, useRef, useState } from 'react';
+import styled from 'styled-components';
 import { loadGoogleMapsScript } from '../utils/loadGoogleMapsScript';
+
+const InputContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 10px;
+  align-items: stretch;
+  
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+  }
+`;
+
+const LocationInput = styled.input`
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  font-size: 1.1rem;
+  min-width: 0;
+`;
+
+const LocationButton = styled.button`
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  min-width: fit-content;
+`;
+
+const ButtonText = styled.span`
+  font-size: 1rem;
+  color: white;
+  
+  @media (max-width: 640px) {
+    display: none;
+  }
+`;
+
+const ButtonIcon = styled.span`
+  font-size: 1rem;
+  color: white;
+  
+  @media (min-width: 641px) {
+    display: none;
+  }
+`;
 
 interface LocationPickerProps {
 	value: { address: string; lat: number | undefined; lng: number | undefined };
@@ -90,17 +148,16 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange, label 
 					{label}
 				</label>
 			)}
-			<div style={{ display: 'flex', gap: '0.5rem', marginBottom: 10, alignItems: 'center' }}>
-				<input
+			<InputContainer>
+				<LocationInput
 					ref={inputRef}
 					type="text"
 					placeholder="Start typing an address..."
 					value={value.address}
 					onChange={e => onChange({ ...value, address: e.target.value })}
 					required={required}
-					style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: 8, border: '1px solid #bbb', fontSize: '1.1rem' }}
 				/>
-				<button
+				<LocationButton
 					type="button"
 					onClick={() => {
 						if (navigator.geolocation) {
@@ -125,26 +182,13 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange, label 
 							);
 						}
 					}}
-					style={{
-						padding: '0.75rem 1rem',
-						borderRadius: 8,
-						border: '1px solid #2563eb',
-						background: '#2563eb',
-						color: 'white',
-						fontSize: '1rem',
-						cursor: 'pointer',
-						whiteSpace: 'nowrap',
-						display: 'flex',
-						alignItems: 'center',
-						gap: '0.5rem',
-						fontWeight: 500
-					}}
 					title="Use my current location"
 				>
 					<span style={{ fontSize: '1.25rem', lineHeight: 1 }}>📍</span>
-					<span style={{ fontSize: '1rem', color: 'white' }}>Use my current location</span>
-				</button>
-			</div>
+					<ButtonText>Use my current location</ButtonText>
+					<ButtonIcon>📍</ButtonIcon>
+				</LocationButton>
+			</InputContainer>
 			<div ref={mapRef} style={{ width: '100%', height: 220, borderRadius: 10, border: '1px solid #dbeafe' }} />
 			{typeof value.lat === 'number' && typeof value.lng === 'number' && (
 				<div style={{ fontSize: 13, color: '#666', marginTop: 6 }}>

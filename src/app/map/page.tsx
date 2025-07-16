@@ -15,6 +15,10 @@ const PageContainer = styled.div`
   min-height: 100vh;
   background: #f8fafc;
   padding: 1rem;
+  
+  @media (max-width: 768px) {
+    padding: 0.5rem;
+  }
 `;
 
 const Header = styled.div`
@@ -24,6 +28,11 @@ const Header = styled.div`
   margin-bottom: 1rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   border: 1px solid #dbeafe;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
 `;
 
 const Title = styled.h1`
@@ -32,6 +41,10 @@ const Title = styled.h1`
   color: #111;
   margin-bottom: 0.5rem;
   text-align: center;
+  
+  @media (max-width: 768px) {
+    font-size: 1.75rem;
+  }
 `;
 
 const Subtitle = styled.p`
@@ -46,6 +59,11 @@ const Legend = styled.div`
   justify-content: center;
   gap: 2rem;
   margin-top: 1rem;
+  
+  @media (max-width: 768px) {
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
 `;
 
 const LegendItem = styled.div`
@@ -73,6 +91,12 @@ const MapContainer = styled.div`
   border: 1px solid #dbeafe;
   height: calc(100vh - 200px);
   min-height: 500px;
+  
+  @media (max-width: 768px) {
+    height: calc(100vh - 150px);
+    min-height: 400px;
+    border-radius: 0.75rem;
+  }
 `;
 
 const InfoWindow = styled.div`
