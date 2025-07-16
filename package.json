@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "update-embeddings": "node scripts/update-existing-image-embeddings-direct.js",
-    "update-embeddings-prod": "node scripts/update-embeddings-production.js"
+    "update-embeddings-prod": "node scripts/update-embeddings-production.js",
+    "check-db": "node scripts/check-database-setup.js",
+    "run-sql": "node scripts/run-sql.js",
+    "setup-notifications": "node scripts/setup-notifications.js"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.6",

@@ -33,6 +33,9 @@ const StyledInput = styled.input`
     border-color: #2563eb;
     box-shadow: 0 0 0 2px #bfdbfe;
   }
+  &::placeholder {
+    color: #666;
+  }
 `;
 const StyledButton = styled.button`
   width: 100%;
@@ -103,20 +106,22 @@ function AuthForm() {
 	return (
 		<AuthContainer>
 			<Heading>{isSignUp ? 'Sign Up' : 'Sign In'}</Heading>
-			<form onSubmit={handleAuth}>
+			<form onSubmit={handleAuth} autoComplete="off">
 				<StyledInput
 					type="email"
-					placeholder="Email"
+					placeholder="Enter your email address"
 					value={email}
 					onChange={e => setEmail(e.target.value)}
 					required
+					autoComplete="email"
 				/>
 				<StyledInput
 					type="password"
-					placeholder="Password"
+					placeholder="Enter your password"
 					value={password}
 					onChange={e => setPassword(e.target.value)}
 					required
+					autoComplete="current-password"
 				/>
 				<StyledButton type="submit" disabled={loading}>
 					{loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
