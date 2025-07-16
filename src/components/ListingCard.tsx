@@ -236,6 +236,7 @@ const CardHeader = styled.div`
 const TitleSection = styled.div`
   flex: 1;
   min-width: 0;
+  overflow: visible;
 `;
 
 const Title = styled.h3`
@@ -963,7 +964,9 @@ function ImageViewModal({ open, onClose, imageUrl, title }: { open: boolean, onC
 							maxHeight: '100%',
 							objectFit: 'contain',
 							borderRadius: 8,
-							boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
+							boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+							width: 'auto',
+							height: 'auto'
 						}}
 					/>
 				</div>
