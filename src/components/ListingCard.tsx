@@ -21,8 +21,9 @@ interface ListingCardProps {
 	onStatusChange?: () => void;
 }
 
+// FIXED: Clean, consistent card dimensions
 const CARD_WIDTH = '300px';
-const CARD_HEIGHT = '520px'; // FIXED: Increased for better visual balance
+const CARD_HEIGHT = '560px'; // Increased for better content spacing
 
 // FIXED: Helper function to get emoji for category and subcategory
 function getEmojiForCategory(category?: string, subcategory?: string): string {
@@ -101,25 +102,7 @@ function getEmojiForCategory(category?: string, subcategory?: string): string {
 	return categoryEmojis[category.toLowerCase()] || '❓';
 }
 
-const InitialsBox = styled.div`
-  position: absolute;
-  bottom: 1rem;
-  right: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #fff;
-  background: #2563eb;
-  border-radius: 50%;
-  width: 2rem;
-  height: 2rem;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-  z-index: 2;
-`;
-
+// FIXED: Clean, consistent styled components
 const Card = styled.div<{ $isLost: boolean; $isResolved: boolean }>`
   border-radius: 1.25rem;
   box-shadow: 0 4px 16px rgba(0,0,0,0.08);
@@ -140,28 +123,90 @@ const Card = styled.div<{ $isLost: boolean; $isResolved: boolean }>`
   transition: box-shadow 0.2s, transform 0.2s;
   position: relative;
   cursor: pointer;
+  overflow: hidden;
+  z-index: 1;
+  
   &:hover {
     box-shadow: 0 8px 32px rgba(0,0,0,0.13);
-    transform: scale(1.04);
+    transform: scale(1.02);
   }
 `;
 
-// FIXED: Updated placeholder styling with increased height and better visual balance
+const InitialsBox = styled.div`
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  background: #2563eb;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  z-index: 2;
+`;
+
+const EditIconButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 50%;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  transition: background 0.18s;
+  
+  &:hover {
+    background: #e0e7ef;
+  }
+`;
+
+// FIXED: Image section with consistent sizing
+const ImageContainer = styled.div`
+  width: 100%;
+  height: 200px;
+  margin-bottom: 1.5rem;
+  border-radius: 1rem;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+`;
+
+const CardImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+`;
+
 const Placeholder = styled.div`
   width: 100%;
-  height: 220px;
-  margin: 0 auto 2rem auto;
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
-  border-radius: 1rem;
-  border: 1.5px dashed #d1d5db;
-  background: #f1f1f1;
+  background: #f8f9fa;
   color: #9ca3af;
-  position: relative;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1.5px dashed #d1d5db;
 `;
 
 const PlaceholderEmoji = styled.span`
@@ -178,37 +223,13 @@ const PlaceholderText = styled.div`
   font-weight: 500;
 `;
 
-// FIXED: Updated image container with increased height and consistent sizing
-const ImageBox = styled.div`
-  width: 100%;
-  height: 220px;
-  margin: 0 auto 2rem auto;
-  overflow: hidden;
-  border-radius: 1rem;
-  border: 1.5px solid #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  cursor: pointer;
-  position: relative;
-`;
-
-const CardImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-`;
-
-// FIXED: Updated header to include title and status badge in same row
+// FIXED: Header with proper alignment
 const CardHeader = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
-  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  gap: 0.75rem;
 `;
 
 const TitleSection = styled.div`
@@ -220,11 +241,12 @@ const Title = styled.h3`
   font-size: 1.35rem;
   font-weight: 800;
   color: #111;
-  margin: 0;
+  margin: 0 0 0.5rem 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
+  line-height: 1.2;
 `;
 
 const Status = styled.span<{ $isLost: boolean; $isResolved: boolean }>`
@@ -237,6 +259,8 @@ const Status = styled.span<{ $isLost: boolean; $isResolved: boolean }>`
   box-shadow: 0 1px 3px rgba(0,0,0,0.07);
   border: 1.5px solid;
   flex-shrink: 0;
+  white-space: nowrap;
+  
   ${({ $isLost, $isResolved }) => $isResolved ? `
     background: #fbcfe8;
     color: #be185d;
@@ -252,16 +276,43 @@ const Status = styled.span<{ $isLost: boolean; $isResolved: boolean }>`
   `}
 `;
 
+// FIXED: Tags with proper spacing and alignment
+const TagRow = styled.div`
+  display: flex;
+  gap: 0.4rem;
+  row-gap: 0.3rem;
+  margin: 0.5rem 0 0.75rem 0;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 2rem;
+`;
+
+const Tag = styled.span<{ $type: string }>`
+  display: inline-block;
+  padding: 0.25em 0.8em;
+  border-radius: 1.2em;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: ${({ $type }) => getTagColors($type).bg};
+  color: ${({ $type }) => getTagColors($type).color};
+  border: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  white-space: nowrap;
+  line-height: 1.2;
+`;
+
+// FIXED: Content sections with consistent spacing
 const Description = styled.p`
   color: #222;
-  font-size: 1.08rem;
-  margin: 0.7rem 0 1.1rem 0;
-  min-height: 2.5em;
+  font-size: 1rem;
+  margin: 0 0 1rem 0;
+  min-height: 2.4em;
   font-weight: 500;
+  line-height: 1.4;
 `;
 
 const Info = styled.div`
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: #333;
   margin-bottom: 1rem;
 `;
@@ -269,21 +320,68 @@ const Info = styled.div`
 const InfoRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.2rem;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
 `;
 
 const InfoLabel = styled.span`
-  font-weight: 700;
+  font-weight: 600;
   color: #111;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  font-size: 1.1rem;
 `;
 
 const InfoValue = styled.span`
   color: #444;
   font-weight: 500;
+  flex: 1;
+`;
+
+// FIXED: Buttons with consistent styling
+const ClaimButton = styled.button`
+  width: 100%;
+  margin-top: 0.5rem;
+  background: #22c55e;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 0;
+  box-shadow: 0 2px 8px rgba(34,197,94,0.10);
+  cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s;
+  
+  &:hover {
+    background: #16a34a;
+    box-shadow: 0 4px 16px rgba(34,197,94,0.13);
+  }
+`;
+
+const ResolveButton = styled.button`
+  width: 100%;
+  margin-top: 0.75rem;
+  background: #f472b6;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 0;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(245,114,182,0.10);
+  transition: background 0.18s, box-shadow 0.18s;
+  
+  &:hover {
+    background: #ec4899;
+    box-shadow: 0 4px 16px rgba(245,114,182,0.13);
+  }
+  
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 `;
 
 const Actions = styled.div`
@@ -298,46 +396,38 @@ const ActionButton = styled.button`
   flex: 1;
   padding: 0.7rem 0;
   border-radius: 0.5rem;
-  font-size: 1.08rem;
+  font-size: 1rem;
   font-weight: 700;
   border: none;
   cursor: pointer;
   transition: background 0.18s;
-  &.view { background: #2563eb; color: #fff; }
-  &.view:hover { background: #1d4ed8; }
-  &.edit { background: #f1f5f9; color: #222; border: 1.5px solid #bbb; }
-  &.edit:hover { background: #e0e7ef; }
-  &.delete { background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; }
-  &.delete:hover { background: #fecaca; }
+  
+  &.view { 
+    background: #2563eb; 
+    color: #fff; 
+  }
+  &.view:hover { 
+    background: #1d4ed8; 
+  }
+  &.edit { 
+    background: #f1f5f9; 
+    color: #222; 
+    border: 1.5px solid #bbb; 
+  }
+  &.edit:hover { 
+    background: #e0e7ef; 
+  }
+  &.delete { 
+    background: #fee2e2; 
+    color: #b91c1c; 
+    border: 1.5px solid #fca5a5; 
+  }
+  &.delete:hover { 
+    background: #fecaca; 
+  }
 `;
 
-// FIXED: Updated tag styling for better alignment and responsiveness
-const TagRow = styled.div`
-  display: flex;
-  gap: 0.3rem;
-  row-gap: 0.25rem;
-  margin: 0.5rem 0 0.8rem 0;
-  flex-wrap: wrap;
-  align-items: center;
-`;
-
-const Tag = styled.span<{ $type: string }>`
-  display: inline-block;
-  padding: 0.28em 0.95em;
-  border-radius: 1.2em;
-  font-size: 0.98rem;
-  font-weight: 600;
-  max-width: 100px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  background: ${({ $type }) => getTagColors($type).bg};
-  color: ${({ $type }) => getTagColors($type).color};
-  border: none;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-`;
-
-// FIXED: Color mappings for category and subcategory tags with improved contrast
+// FIXED: Color mappings for tags
 const TAG_COLORS: Record<string, { bg: string; color: string }> = {
 	electronics: { bg: '#e0f2fe', color: '#0369a1' },
 	phone: { bg: '#dbeafe', color: '#2563eb' },
@@ -381,7 +471,7 @@ function getTagColors(type?: string) {
 	return TAG_COLORS[key] || TAG_COLORS.other;
 }
 
-// Placeholder for ClaimModal (to be implemented)
+// FIXED: Modal components with proper z-index hierarchy and containment
 function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () => void, listingId: string }) {
 	const [description, setDescription] = useState('');
 	const [whereLost, setWhereLost] = useState('');
@@ -472,33 +562,42 @@ function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () =
 
 	if (!open) return null;
 	return createPortal(
-		<div style={{
-			position: 'fixed',
-			top: 0,
-			left: 0,
-			width: '100vw',
-			height: '100vh',
-			background: 'rgba(0,0,0,0.5)',
-			zIndex: 1800,
-			display: 'flex',
-			alignItems: 'center',
-			justifyContent: 'center',
-			backdropFilter: 'blur(4px)',
-			padding: '20px'
-		}}>
-			<div style={{
-				background: '#fff',
-				borderRadius: 12,
-				padding: 32,
-				minWidth: 320,
-				maxWidth: 500,
-				width: '90vw',
-				maxHeight: '90vh',
-				overflowY: 'auto',
-				boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-				color: '#111',
-				border: '1px solid #e5e7eb'
-			}}>
+		<div
+			style={{
+				position: 'fixed',
+				top: 0,
+				left: 0,
+				width: '100vw',
+				height: '100vh',
+				background: 'rgba(0,0,0,0.6)',
+				zIndex: 9999,
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				backdropFilter: 'blur(4px)',
+				padding: '20px'
+			}}
+			onClick={(e) => {
+				if (e.target === e.currentTarget) onClose();
+			}}
+		>
+			<div
+				style={{
+					background: '#fff',
+					borderRadius: 12,
+					padding: 32,
+					minWidth: 320,
+					maxWidth: 500,
+					width: '90vw',
+					maxHeight: '90vh',
+					overflowY: 'auto',
+					boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+					color: '#111',
+					border: '1px solid #e5e7eb',
+					position: 'relative'
+				}}
+				onClick={(e) => e.stopPropagation()}
+			>
 				<h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: 16, color: '#111' }}>Claim Listing</h2>
 				{success ? (
 					<div style={{ color: '#059669', fontWeight: 600, textAlign: 'center', margin: '2rem 0' }}>Claim submitted!</div>
@@ -556,48 +655,6 @@ function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () =
 	);
 }
 
-const ClaimButton = styled.button`
-  width: 100%;
-  margin-top: 0.7rem;
-  background: #22c55e;
-  color: #fff;
-  font-size: 1.13rem;
-  font-weight: 700;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.85rem 0;
-  box-shadow: 0 2px 8px rgba(34,197,94,0.10);
-  cursor: pointer;
-  transition: background 0.18s, box-shadow 0.18s;
-  &:hover {
-    background: #16a34a;
-    box-shadow: 0 4px 16px rgba(34,197,94,0.13);
-  }
-`;
-
-const EditIconButton = styled.button`
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: #f1f5f9;
-  border: none;
-  border-radius: 50%;
-  width: 2.2rem;
-  height: 2.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #2563eb;
-  font-size: 1.1rem;
-  cursor: pointer;
-  z-index: 10;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-  transition: background 0.18s;
-  &:hover {
-    background: #e0e7ef;
-  }
-`;
-
 function formatDateUS(dateStr: string) {
 	if (!dateStr) return '';
 	// Use only the date part (YYYY-MM-DD)
@@ -628,33 +685,42 @@ function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClos
 	};
 
 	if (!open) return null;
-	return (
-		<div style={{
-			position: 'fixed',
-			top: 0,
-			left: 0,
-			width: '100vw',
-			height: '100vh',
-			background: 'rgba(0,0,0,0.5)',
-			zIndex: 2000,
-			display: 'flex',
-			alignItems: 'center',
-			justifyContent: 'center',
-			backdropFilter: 'blur(4px)'
-		}}>
-			<div style={{
-				background: '#fff',
-				borderRadius: 12,
-				padding: 32,
-				minWidth: 320,
-				maxWidth: 500,
-				maxHeight: '90vh',
-				overflowY: 'auto',
-				boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-				color: '#111',
-				position: 'relative',
-				border: '1px solid #e5e7eb'
-			}}>
+	return createPortal(
+		<div
+			style={{
+				position: 'fixed',
+				top: 0,
+				left: 0,
+				width: '100vw',
+				height: '100vh',
+				background: 'rgba(0,0,0,0.6)',
+				zIndex: 9998,
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				backdropFilter: 'blur(4px)',
+				padding: '20px'
+			}}
+			onClick={(e) => {
+				if (e.target === e.currentTarget) onClose();
+			}}
+		>
+			<div
+				style={{
+					background: '#fff',
+					borderRadius: 12,
+					padding: 32,
+					minWidth: 320,
+					maxWidth: 500,
+					maxHeight: '90vh',
+					overflowY: 'auto',
+					boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+					color: '#111',
+					position: 'relative',
+					border: '1px solid #e5e7eb'
+				}}
+				onClick={(e) => e.stopPropagation()}
+			>
 				<button onClick={onClose} style={{
 					position: 'absolute',
 					top: 12,
@@ -708,7 +774,8 @@ function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClos
 					</button>
 				)}
 			</div>
-		</div>
+		</div>,
+		document.body
 	);
 }
 
@@ -726,6 +793,10 @@ function ShareSheet({ open, onClose, listing }: { open: boolean, onClose: () => 
 					url: shareUrl,
 				});
 				setShared(true);
+				// Auto-close after sharing
+				setTimeout(() => {
+					onClose();
+				}, 2000);
 			} catch { }
 		}
 	};
@@ -733,36 +804,49 @@ function ShareSheet({ open, onClose, listing }: { open: boolean, onClose: () => 
 	const handleCopy = async () => {
 		await navigator.clipboard.writeText(shareUrl);
 		setShared(true);
+		// Auto-close after copying
+		setTimeout(() => {
+			onClose();
+		}, 2000);
 	};
 
 	if (!open) return null;
-	return (
-		<div style={{
-			position: 'fixed',
-			top: 0,
-			left: 0,
-			width: '100vw',
-			height: '100vh',
-			background: 'rgba(0,0,0,0.5)',
-			zIndex: 1500,
-			display: 'flex',
-			alignItems: 'center',
-			justifyContent: 'center',
-			backdropFilter: 'blur(4px)'
-		}}>
-			<div style={{
-				background: '#18181b',
-				color: '#fff',
-				borderRadius: 16,
-				padding: '2.2rem 2.2rem 1.5rem 2.2rem',
-				maxWidth: 420,
-				width: '90vw',
-				maxHeight: '90vh',
-				overflowY: 'auto',
-				boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-				position: 'relative',
-				border: '1px solid #27272a'
-			}}>
+	return createPortal(
+		<div
+			style={{
+				position: 'fixed',
+				top: 0,
+				left: 0,
+				width: '100vw',
+				height: '100vh',
+				background: 'rgba(0,0,0,0.6)',
+				zIndex: 9997,
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				backdropFilter: 'blur(4px)',
+				padding: '20px'
+			}}
+			onClick={(e) => {
+				if (e.target === e.currentTarget) onClose();
+			}}
+		>
+			<div
+				style={{
+					background: '#18181b',
+					color: '#fff',
+					borderRadius: 16,
+					padding: '2.2rem 2.2rem 1.5rem 2.2rem',
+					maxWidth: 420,
+					width: '90vw',
+					maxHeight: '90vh',
+					overflowY: 'auto',
+					boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+					position: 'relative',
+					border: '1px solid #27272a'
+				}}
+				onClick={(e) => e.stopPropagation()}
+			>
 				<button onClick={onClose} style={{
 					position: 'absolute',
 					top: 12,
@@ -794,42 +878,51 @@ function ShareSheet({ open, onClose, listing }: { open: boolean, onClose: () => 
 				)}
 				{shared && <div style={{ color: '#059669', fontWeight: 600, marginTop: 8 }}>Thank you for sharing!</div>}
 			</div>
-		</div>
+		</div>,
+		document.body
 	);
 }
 
 function ImageViewModal({ open, onClose, imageUrl, title }: { open: boolean, onClose: () => void, imageUrl: string, title: string }) {
 	if (!open) return null;
 
-	return (
-		<div style={{
-			position: 'fixed',
-			top: 0,
-			left: 0,
-			width: '100vw',
-			height: '100vh',
-			background: 'rgba(0,0,0,0.8)',
-			zIndex: 3000,
-			display: 'flex',
-			alignItems: 'center',
-			justifyContent: 'center',
-			backdropFilter: 'blur(8px)',
-			padding: '20px'
-		}}>
-			<div style={{
-				position: 'relative',
-				maxWidth: '90vw',
-				maxHeight: '90vh',
+	return createPortal(
+		<div
+			style={{
+				position: 'fixed',
+				top: 0,
+				left: 0,
+				width: '100vw',
+				height: '100vh',
+				background: 'rgba(0,0,0,0.9)',
+				zIndex: 10000,
 				display: 'flex',
-				flexDirection: 'column',
 				alignItems: 'center',
-				background: '#fff',
-				borderRadius: 12,
-				padding: '24px',
-				boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-				border: '1px solid #e5e7eb',
-				overflow: 'hidden'
-			}}>
+				justifyContent: 'center',
+				backdropFilter: 'blur(8px)',
+				padding: '20px'
+			}}
+			onClick={(e) => {
+				if (e.target === e.currentTarget) onClose();
+			}}
+		>
+			<div
+				style={{
+					position: 'relative',
+					maxWidth: '90vw',
+					maxHeight: '90vh',
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					background: '#fff',
+					borderRadius: 12,
+					padding: '24px',
+					boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+					border: '1px solid #e5e7eb',
+					overflow: 'hidden'
+				}}
+				onClick={(e) => e.stopPropagation()}
+			>
 				<button onClick={onClose} style={{
 					position: 'absolute',
 					top: '12px',
@@ -876,7 +969,8 @@ function ImageViewModal({ open, onClose, imageUrl, title }: { open: boolean, onC
 					/>
 				</div>
 			</div>
-		</div>
+		</div>,
+		document.body
 	);
 }
 
@@ -901,7 +995,14 @@ export default function ListingCard({
 	const [showImageView, setShowImageView] = useState(false);
 	const condensedLocation = listing.location?.split(',')[0] || '';
 
-	// FIXED: Ensure only one modal can be open at a time
+	// FIXED: Ensure only one modal can be open at a time with proper state management
+	const closeAllModals = () => {
+		setShowDetails(false);
+		setShowImageView(false);
+		setShowClaimModal(false);
+		setShowShareSheet(false);
+	};
+
 	useEffect(() => {
 		if (showDetails) {
 			setShowImageView(false);
@@ -995,25 +1096,29 @@ export default function ListingCard({
 			return;
 		}
 		if (onStatusChange) onStatusChange();
+		closeAllModals();
 		setShowShareSheet(true);
 	};
 
-	// FIXED: Proper event handlers with explicit stopPropagation
+	// FIXED: Proper event handlers with explicit stopPropagation and modal state management
 	const handleImageClick = (e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
+		closeAllModals();
 		setShowImageView(true);
 	};
 
 	const handleTitleClick = (e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
+		closeAllModals();
 		setShowDetails(true);
 	};
 
 	const handleClaimClick = (e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
+		closeAllModals();
 		setShowClaimModal(true);
 	};
 
@@ -1030,14 +1135,16 @@ export default function ListingCard({
 		>
 			{/* FIXED: Image section with proper event handling */}
 			{listing.image_url ? (
-				<ImageBox onClick={handleImageClick}>
+				<ImageContainer onClick={handleImageClick}>
 					<CardImage src={listing.image_url} alt={listing.title} />
-				</ImageBox>
+				</ImageContainer>
 			) : (
-				<Placeholder>
-					<PlaceholderEmoji>{getEmojiForCategory(listing.item_type)}</PlaceholderEmoji>
-					<PlaceholderText>No image available</PlaceholderText>
-				</Placeholder>
+				<ImageContainer onClick={handleImageClick}>
+					<Placeholder>
+						<PlaceholderEmoji>{getEmojiForCategory(listing.item_type)}</PlaceholderEmoji>
+						<PlaceholderText>No image available</PlaceholderText>
+					</Placeholder>
+				</ImageContainer>
 			)}
 			{/* FIXED: Title and Status badge in same row */}
 			<CardHeader>
@@ -1112,27 +1219,12 @@ export default function ListingCard({
 			)}
 			{/* Mark as Resolved button for creator if active, at the bottom of the card */}
 			{canResolve && (
-				<button
+				<ResolveButton
 					onClick={handleResolve}
 					disabled={resolving}
-					style={{
-						marginTop: 16,
-						width: '100%',
-						background: '#f472b6',
-						color: '#fff',
-						fontWeight: 700,
-						fontSize: '1.1rem',
-						border: 'none',
-						borderRadius: 8,
-						padding: '0.9rem 0',
-						cursor: 'pointer',
-						boxShadow: '0 2px 8px rgba(245,114,182,0.10)',
-						transition: 'background 0.18s, box-shadow 0.18s',
-						opacity: resolving ? 0.7 : 1
-					}}
 				>
 					{resolving ? 'Marking as Resolved...' : 'Mark as Resolved'}
-				</button>
+				</ResolveButton>
 			)}
 			{onEdit && (
 				<EditIconButton title="Edit Listing" onClick={e => { e.stopPropagation(); onEdit(listing); }}>
@@ -1144,16 +1236,16 @@ export default function ListingCard({
 
 			{/* FIXED: Modals with proper z-index and single modal enforcement */}
 			{showClaimModal && (
-				<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
+				<ClaimModal open={showClaimModal} onClose={closeAllModals} listingId={listing.id} />
 			)}
 			{showDetails && (
-				<ListingDetailsModal open={showDetails} onClose={() => setShowDetails(false)} listing={listing} />
+				<ListingDetailsModal open={showDetails} onClose={closeAllModals} listing={listing} />
 			)}
 			{showShareSheet && (
-				<ShareSheet open={showShareSheet} onClose={() => setShowShareSheet(false)} listing={listing} />
+				<ShareSheet open={showShareSheet} onClose={closeAllModals} listing={listing} />
 			)}
 			{showImageView && (
-				<ImageViewModal open={showImageView} onClose={() => setShowImageView(false)} imageUrl={listing.image_url || ''} title={listing.title} />
+				<ImageViewModal open={showImageView} onClose={closeAllModals} imageUrl={listing.image_url || ''} title={listing.title} />
 			)}
 
 			{showActions && (
