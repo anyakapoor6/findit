@@ -362,20 +362,20 @@ export default function Navbar() {
       // Initial fetch for unread
       const fetchUnread = async () => {
         const { data } = await supabase
-          .from('match_notifications')
+          .from('notifications')
           .select('id')
           .eq('user_id', notifUser.id)
-          .is('read_at', null)
+          .eq('is_read', false)
           .limit(1);
         setHasUnread(Boolean(data && data.length > 0));
       };
       fetchUnread();
       // Subscribe to new notifications
       const channel = supabase
-        .channel('public:match_notifications')
+        .channel('public:notifications')
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'match_notifications', filter: `user_id=eq.${notifUser.id}` },
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${notifUser.id}` },
           (payload) => {
             setHasUnread(true);
           }
@@ -397,24 +397,23 @@ export default function Navbar() {
     if (showDropdown && notifUser) {
       setNotifLoading(true);
       supabase
-        .from('match_notifications')
+        .from('notifications')
         .select(`
           id,
-          notification_type,
-          sent_via,
-          sent_at,
-          read_at,
+          type,
+          message,
+          created_at,
+          is_read,
           listing_id,
-          matched_listing_id,
-          match_id
+          claim_id
         `)
         .eq('user_id', notifUser.id)
-        .order('sent_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(20)
         .then(({ data }) => {
           setNotifications(data || []);
           setNotifLoading(false);
-          setHasUnread(Boolean((data || []).some(n => !n.read_at)));
+          setHasUnread(Boolean((data || []).some(n => !n.is_read)));
         });
     }
   }, [showDropdown, notifUser, isClient]);
@@ -436,19 +435,23 @@ export default function Navbar() {
 
   // Mark notification as read
   const markAsRead = async (notifId: string) => {
-    setNotifications((prev) => prev.map(n => n.id === notifId ? { ...n, read_at: new Date().toISOString() } : n));
-    await supabase.from('match_notifications').update({ read_at: new Date().toISOString() }).eq('id', notifId);
+    setNotifications((prev) => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
+    await supabase.from('notifications').update({ is_read: true }).eq('id', notifId);
   };
 
   // Get notification message based on type
   const getNotificationMessage = (notification: any) => {
-    switch (notification.notification_type) {
+    switch (notification.type) {
       case 'match_found':
         return '🎯 New match found for your listing!';
       case 'match_updated':
         return '📝 A match for your listing has been updated.';
+      case 'claim_submitted':
+        return '📋 New claim submitted for your listing!';
+      case 'claim_accepted':
+        return '✅ Your claim was accepted!';
       default:
-        return '🔔 You have a new notification.';
+        return notification.message || '🔔 You have a new notification.';
     }
   };
 
@@ -583,15 +586,15 @@ export default function Navbar() {
               ) : notifications.map(n => (
                 <NotifItem
                   key={n.id}
-                  $unread={!n.read_at}
+                  $unread={!n.is_read}
                   onClick={async () => {
                     markAsRead(n.id);
-                    if (n.notification_type === 'match_found' || n.notification_type === 'match_updated') {
+                    if (n.type === 'match_found' || n.type === 'match_updated') {
                       router.push('/matches');
                     }
                   }}
                 >
-                  {!n.read_at && <NotifDot />}
+                  {!n.is_read && <NotifDot />}
                   <NotifContent>
                     <NotifText>
                       {getNotificationMessage(n)}
@@ -599,7 +602,7 @@ export default function Navbar() {
                         <NotifListingTitle listingId={n.listing_id} />
                       )}
                     </NotifText>
-                    <NotifTime>{formatNotificationTime(n.sent_at)}</NotifTime>
+                    <NotifTime>{formatNotificationTime(n.created_at)}</NotifTime>
                   </NotifContent>
                 </NotifItem>
               ))}

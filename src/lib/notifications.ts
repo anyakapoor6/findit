@@ -1,6 +1,6 @@
 import { createSupabaseClient } from '../utils/supabaseClient';
 const supabase = createSupabaseClient();
-import type { Match, MatchNotification } from './types';
+import type { Match } from './types';
 import type { NotificationType } from './types';
 
 // Web notification hooks and placeholders
@@ -46,17 +46,14 @@ export class WebNotificationService {
 				notification.close();
 			};
 
-			// Store notification record
+			// Store notification record in the existing notifications table
 			await this.storeNotificationRecord({
-				id: crypto.randomUUID(),
 				user_id: userId,
-				match_id: match.match_id,
+				type: 'match_found',
+				message: `Match found for "${match.listing_title}" with ${Math.round(match.score * 100)}% confidence`,
 				listing_id: match.listing_id,
-				matched_listing_id: match.matched_listing_id,
-				notification_type: 'match_found',
-				sent_via: 'web',
-				sent_at: new Date().toISOString(),
-				read_at: undefined
+				claim_id: null,
+				is_read: false
 			});
 
 			return true;
@@ -66,10 +63,17 @@ export class WebNotificationService {
 		}
 	}
 
-	private static async storeNotificationRecord(notification: MatchNotification): Promise<void> {
+	private static async storeNotificationRecord(notification: {
+		user_id: string;
+		type: string;
+		message: string;
+		listing_id: string;
+		claim_id: string | null;
+		is_read: boolean;
+	}): Promise<void> {
 		try {
 			await supabase
-				.from('match_notifications')
+				.from('notifications')
 				.insert(notification);
 		} catch (error) {
 			console.error('Error storing notification record:', error);
@@ -97,6 +101,16 @@ export class EmailNotificationService {
 				throw new Error(`Email API returned ${response.status}`);
 			}
 
+			// Store notification record
+			await this.storeNotificationRecord({
+				user_id: match.listing_user_id,
+				type: 'match_found',
+				message: `Email sent: ${Math.round(match.score * 100)}% match for "${match.listing_title}"`,
+				listing_id: match.listing_id,
+				claim_id: null,
+				is_read: false
+			});
+
 			return true;
 		} catch (error) {
 			console.error('Error sending email notification:', error);
@@ -120,10 +134,17 @@ export class EmailNotificationService {
     `;
 	}
 
-	private static async storeNotificationRecord(notification: MatchNotification): Promise<void> {
+	private static async storeNotificationRecord(notification: {
+		user_id: string;
+		type: string;
+		message: string;
+		listing_id: string;
+		claim_id: string | null;
+		is_read: boolean;
+	}): Promise<void> {
 		try {
 			await supabase
-				.from('match_notifications')
+				.from('notifications')
 				.insert(notification);
 		} catch (error) {
 			console.error('Error storing notification record:', error);
@@ -144,15 +165,12 @@ export class SMSNotificationService {
 
 			// Store notification record
 			await this.storeNotificationRecord({
-				id: crypto.randomUUID(),
-				user_id: match.listing_user_id, // Fixed: Use the correct user ID
-				match_id: match.match_id,
+				user_id: match.listing_user_id,
+				type: 'match_found',
+				message: `SMS sent: ${Math.round(match.score * 100)}% match for "${match.listing_title}"`,
 				listing_id: match.listing_id,
-				matched_listing_id: match.matched_listing_id,
-				notification_type: 'match_found',
-				sent_via: 'sms',
-				sent_at: new Date().toISOString(),
-				read_at: undefined
+				claim_id: null,
+				is_read: false
 			});
 
 			return true;
@@ -166,10 +184,17 @@ export class SMSNotificationService {
 		return `FindIt: New ${Math.round(match.score * 100)}% match found for "${match.listing_title}". View at ${process.env.NEXT_PUBLIC_APP_URL}/matches`;
 	}
 
-	private static async storeNotificationRecord(notification: MatchNotification): Promise<void> {
+	private static async storeNotificationRecord(notification: {
+		user_id: string;
+		type: string;
+		message: string;
+		listing_id: string;
+		claim_id: string | null;
+		is_read: boolean;
+	}): Promise<void> {
 		try {
 			await supabase
-				.from('match_notifications')
+				.from('notifications')
 				.insert(notification);
 		} catch (error) {
 			console.error('Error storing notification record:', error);
@@ -190,7 +215,7 @@ export class NotificationOrchestrator {
 
 		// Web notifications
 		if (userPreferences.webNotifications) {
-			promises.push(WebNotificationService.sendMatchNotification(match, match.listing_id));
+			promises.push(WebNotificationService.sendMatchNotification(match, match.listing_user_id));
 		}
 
 		// Email notifications
@@ -232,4 +257,48 @@ export async function sendEmailNotification({
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ user_id, type, message, listing_title, claim_status }),
 	});
+}
+
+// Function to get notifications for a user
+export async function getUserNotifications(userId: string) {
+	const { data, error } = await supabase
+		.from('notifications')
+		.select('*')
+		.eq('user_id', userId)
+		.order('created_at', { ascending: false });
+
+	if (error) {
+		console.error('Error fetching notifications:', error);
+		return [];
+	}
+
+	return data || [];
+}
+
+// Function to mark notification as read
+export async function markNotificationAsRead(notificationId: string) {
+	const { error } = await supabase
+		.from('notifications')
+		.update({ is_read: true })
+		.eq('id', notificationId);
+
+	if (error) {
+		console.error('Error marking notification as read:', error);
+	}
+}
+
+// Function to get unread notification count
+export async function getUnreadNotificationCount(userId: string) {
+	const { count, error } = await supabase
+		.from('notifications')
+		.select('*', { count: 'exact', head: true })
+		.eq('user_id', userId)
+		.eq('is_read', false);
+
+	if (error) {
+		console.error('Error getting unread count:', error);
+		return 0;
+	}
+
+	return count || 0;
 } 

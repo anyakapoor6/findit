@@ -34,7 +34,9 @@ export default function ContactPage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		console.log('Form submission - Name:', name, 'Email:', email, 'Message:', message);
 		if (!message.trim() || !email.trim() || !name.trim()) {
+			console.log('Validation failed - Name length:', name.trim().length, 'Email length:', email.trim().length, 'Message length:', message.trim().length);
 			setStatus("error");
 			return;
 		}
@@ -51,19 +53,32 @@ export default function ContactPage() {
 			}
 		}
 		try {
-			await sendEmailNotification({
-				user_id: "contact-form",
-				type: "contact",
-				message: `Contact form message from ${name} (${email}):\n${message}${photoUrl ? `\nPhoto: ${photoUrl}` : ""}`,
-				listing_title: undefined,
-				claim_status: undefined,
+			// Send contact form data to our API endpoint
+			const response = await fetch('/api/contact', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					name,
+					email,
+					message,
+					photoUrl
+				})
 			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to send message');
+			}
+
 			setStatus("success");
 			setMessage("");
 			setEmail("");
 			setName("");
 			setPhoto(null);
-		} catch {
+		} catch (error) {
+			console.error('Contact form submission error:', error);
 			setStatus("error");
 		} finally {
 			setLoading(false);
@@ -131,7 +146,15 @@ export default function ContactPage() {
 					<div style={{ color: "#059669", fontWeight: 600, marginTop: 16 }}>Message sent! We'll get back to you soon.</div>
 				)}
 				{status === "error" && (
-					<div style={{ color: "#dc2626", fontWeight: 600, marginTop: 16 }}>Please fill out all fields and try again.</div>
+					<div style={{ color: "#dc2626", fontWeight: 600, marginTop: 16 }}>
+						Please fill out all required fields and try again.
+						{/* Debug info in development */}
+						{process.env.NODE_ENV === 'development' && (
+							<div style={{ fontSize: '0.8rem', marginTop: 4 }}>
+								Name: "{name}", Email: "{email}", Message: "{message}"
+							</div>
+						)}
+					</div>
 				)}
 			</form>
 		</div>
