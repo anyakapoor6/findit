@@ -243,10 +243,9 @@ const Title = styled.h3`
   font-weight: 800;
   color: #111;
   margin: 0 0 0.5rem 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   line-height: 1.2;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 `;
 
 const Status = styled.span<{ $isLost: boolean; $isResolved: boolean }>`

@@ -308,11 +308,9 @@ export default function HomePageClient() {
 						background: '#f8fafc',
 						borderRadius: '0.5rem',
 						border: '1px solid #e2e8f0',
-						maxWidth: '400px',
+						width: 'fit-content',
 						margin: '1rem auto 0 auto',
-						whiteSpace: 'nowrap',
-						overflow: 'hidden',
-						textOverflow: 'ellipsis'
+						textAlign: 'center'
 					}}>
 						💻 <strong>Recommended:</strong> View on computer for better experience
 					</p>
