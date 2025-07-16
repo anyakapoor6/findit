@@ -30,12 +30,14 @@ const NavContainer = styled.div`
 
   @media (max-width: 768px) {
     padding: 0.75rem 1rem;
-    flex-direction: column;
-    gap: 0.75rem;
+    flex-direction: row;
+    gap: 0.5rem;
   }
   
   @media (max-width: 640px) {
     padding: 0.5rem 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 `
 
@@ -153,6 +155,13 @@ const NotifDropdown = styled.div`
     right: -1rem;
     min-width: 280px;
     max-width: calc(100vw - 2rem);
+  }
+  
+  @media (max-width: 640px) {
+    right: -0.5rem;
+    min-width: 260px;
+    max-width: calc(100vw - 1rem);
+    top: 2.5rem;
   }
 `;
 const NotifItem = styled.div<{ $unread?: boolean }>`
@@ -556,9 +565,8 @@ export default function Navbar() {
         {/* Notification Bell */}
         <div style={{ position: 'relative' }}>
           <BellButton
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
+            onClick={() => {
+              console.log('Bell clicked, current dropdown state:', showDropdown);
               setShowDropdown(!showDropdown);
             }}
             aria-label="Notifications"

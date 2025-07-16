@@ -36,8 +36,15 @@ const FilterBar = styled.div`
   justify-content: space-between;
   border: 1px solid #dbeafe;
   margin-bottom: 1rem;
+  
   @media (min-width: 768px) {
     flex-direction: row;
+    gap: 0.75rem;
+  }
+  
+  @media (max-width: 640px) {
+    padding: 0.75rem;
+    gap: 0.75rem;
   }
 `;
 const FilterInput = styled.input`
@@ -85,11 +92,19 @@ const ListingsGrid = styled.div`
   grid-template-columns: 1fr;
   gap: 2rem;
   justify-content: center;
+  
   @media (min-width: 600px) {
     grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
   }
+  
   @media (min-width: 900px) {
     grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  @media (max-width: 640px) {
+    gap: 1.5rem;
   }
 `;
 
@@ -124,7 +139,7 @@ export default function HomePageClient() {
 	const searchParams = useSearchParams();
 	const highlightedId = searchParams?.get('listingId');
 	const highlightedRef = useRef<HTMLDivElement | null>(null);
-	const [showHighlight, setShowHighlight] = useState(true);
+	const [showHighlight, setShowHighlight] = useState(false);
 
 	// Sync filter state with URL
 	useEffect(() => {
@@ -221,9 +236,11 @@ export default function HomePageClient() {
 
 	// Enhanced highlighting effect for map navigation
 	useEffect(() => {
+		console.log('Highlight effect triggered:', { highlightedId, listingsLength: listings.length });
 		if (highlightedId && listings.length > 0) {
 			// Find the listing to highlight
 			const listingToHighlight = listings.find(listing => listing.id === highlightedId);
+			console.log('Found listing to highlight:', listingToHighlight);
 			if (listingToHighlight) {
 				// Apply highlight immediately
 				setShowHighlight(true);
@@ -231,17 +248,21 @@ export default function HomePageClient() {
 				// Scroll to the highlighted listing after a short delay to ensure DOM is ready
 				setTimeout(() => {
 					if (highlightedRef.current) {
+						console.log('Scrolling to highlighted listing');
 						highlightedRef.current.scrollIntoView({
 							behavior: 'smooth',
 							block: 'center'
 						});
 					}
-				}, 100);
+				}, 200);
 
-				// Remove highlight after 3 seconds
-				const timer = setTimeout(() => setShowHighlight(false), 3000);
+				// Remove highlight after 5 seconds (increased for better visibility)
+				const timer = setTimeout(() => setShowHighlight(false), 5000);
 				return () => clearTimeout(timer);
 			}
+		} else {
+			// Reset highlight when no highlightedId
+			setShowHighlight(false);
 		}
 	}, [highlightedId, listings]);
 
@@ -288,7 +309,10 @@ export default function HomePageClient() {
 						borderRadius: '0.5rem',
 						border: '1px solid #e2e8f0',
 						maxWidth: '400px',
-						margin: '1rem auto 0 auto'
+						margin: '1rem auto 0 auto',
+						whiteSpace: 'nowrap',
+						overflow: 'hidden',
+						textOverflow: 'ellipsis'
 					}}>
 						💻 <strong>Recommended:</strong> View on computer for better experience
 					</p>
@@ -389,12 +413,14 @@ export default function HomePageClient() {
 										key={listing.id}
 										ref={isHighlighted ? highlightedRef : undefined}
 										style={isHighlighted ? {
-											boxShadow: '0 0 0 4px #2563eb, 0 8px 32px rgba(37, 99, 235, 0.3)',
+											boxShadow: '0 0 0 6px #2563eb, 0 12px 40px rgba(37, 99, 235, 0.4)',
 											borderRadius: '1.25rem',
-											transition: 'all 0.3s ease',
-											transform: 'scale(1.02)',
+											transition: 'all 0.4s ease',
+											transform: 'scale(1.03)',
 											zIndex: 10,
-											position: 'relative'
+											position: 'relative',
+											background: 'rgba(37, 99, 235, 0.02)',
+											border: '2px solid #2563eb'
 										} : {}}
 									>
 										<ListingCard listing={listing} />

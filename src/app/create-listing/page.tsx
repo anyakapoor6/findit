@@ -427,8 +427,13 @@ export default function CreateListingPage() {
 		const type = e.target.value;
 		setSelectedType(type);
 		setSelectedSubtype('');
-		setCustomType('');
 		setCustomSubtype('');
+
+		// Don't clear customType if user is selecting "other"
+		if (type !== 'other') {
+			setCustomType('');
+		}
+
 		setFormData(prev => ({ ...prev, item_type: type, item_subtype: '' }));
 
 		// Clear extra fields when category changes

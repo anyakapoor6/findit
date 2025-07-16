@@ -1,84 +1,51 @@
-# Notification Update Scripts
+# Database Scripts
 
-This directory contains scripts to update old notifications in your database to ensure they have the correct `type` field for proper routing.
+This directory contains scripts for database setup and maintenance.
 
-## Problem
+## Setup Scripts
 
-Old notifications may be missing the `type` field or have incorrect values, which prevents them from routing correctly when clicked. The notification system expects these types:
+### `setup-matches.sql`
+Creates the matches table and related functions for AI-powered matching.
 
-- `claim_on_listing` - When someone submits a claim on your listing
-- `claim_update` - When there's an update to a claim you submitted
-- `claim_submitted` - When a new claim is submitted (legacy)
-- `claim_accepted` - When your claim is accepted
-- `claim_rejected` - When your claim is rejected
+### `setup-match-notifications.sql`
+Creates the match_notifications table for storing user notifications.
 
-## Solutions
+### `fix-user-matches.sql`
+Fixes any orphaned matches where users no longer exist.
 
-### Option 1: Node.js Script (Recommended)
+### `fix-no-self-matches.sql`
+Removes matches where a listing is matched with itself.
 
-The Node.js script provides detailed logging and intelligent type detection based on message content.
+## Update Scripts
 
-**Prerequisites:**
-- Node.js installed
-- Your `.env.local` file with Supabase credentials
+### `update-notifications.sql`
+Updates notification messages to be more descriptive.
 
-**Run the script:**
+### `update-old-notifications.js`
+Updates existing notifications to use the new format.
+
+## Image Embedding Scripts
+
+### `update-existing-image-embeddings-direct.js`
+**Purpose**: Generates image embeddings for all existing listings that don't have them yet.
+
+**Usage**:
 ```bash
-cd scripts
-node update-old-notifications.js
+npm run update-embeddings
 ```
 
-**What it does:**
-1. Fetches all notifications from your database
-2. Analyzes their current state (missing type, incorrect type, correct type)
-3. Intelligently determines the correct type based on message content
-4. Updates notifications that need fixing
-5. Provides a detailed summary of changes
+**Requirements**:
+- `OPENAI_API_KEY` environment variable set
+- `SUPABASE_SERVICE_ROLE_KEY` environment variable set
+- `NEXT_PUBLIC_SUPABASE_URL` environment variable set
 
-### Option 2: SQL Script
+**What it does**:
+1. Finds all listings that have images but no embeddings
+2. Generates embeddings using OpenAI's text-embedding-3-small model
+3. Updates the database with the new embeddings
+4. Provides progress feedback and error handling
 
-The SQL script can be run directly in your Supabase SQL editor.
+**Note**: This script processes listings one by one with delays to avoid overwhelming the API. For large datasets, it may take some time to complete.
 
-**Steps:**
-1. Go to your Supabase dashboard
-2. Navigate to the SQL Editor
-3. Copy and paste the contents of `update-notifications.sql`
-4. Run the script
-
-**What it does:**
-1. Shows current notification statistics
-2. Updates notifications without type field
-3. Updates notifications based on message content
-4. Shows final distribution
-
-## Expected Notification Types
-
-| Type | Description | Routes To |
-|------|-------------|-----------|
-| `claim_on_listing` | Someone claimed your listing | Profile → "Claims on My Listings" tab |
-| `claim_update` | Update to a claim you submitted | Profile → "Claims" tab |
-| `claim_submitted` | New claim submitted (legacy) | Profile → "Claims on My Listings" tab |
-| `claim_accepted` | Your claim was accepted | Profile → "Claims" tab |
-| `claim_rejected` | Your claim was rejected | Profile → "Claims" tab |
-
-## Safety
-
-Both scripts are safe to run multiple times. They only update notifications that need fixing and won't affect notifications that already have the correct type.
-
-## Troubleshooting
-
-If you encounter issues:
-
-1. **Check your environment variables** - Ensure your `.env.local` file has the correct Supabase credentials
-2. **Check database permissions** - Make sure your Supabase user has permission to read and update the notifications table
-3. **Review the logs** - The Node.js script provides detailed logging to help identify issues
-
-## After Running
-
-Once you've updated your notifications:
-
-1. Test clicking on old notifications in your app
-2. Verify they route to the correct tabs in the profile page
-3. Check that notification messages display correctly
-
-All old notifications should now work properly with the current routing system! 
+### `update-existing-image-embeddings.js`
+Alternative version that uses the API endpoint instead of direct OpenAI calls. Use the direct version for better performance. 
