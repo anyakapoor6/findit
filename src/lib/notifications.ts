@@ -81,26 +81,21 @@ export class WebNotificationService {
 export class EmailNotificationService {
 	static async sendMatchEmail(match: Match, userEmail: string): Promise<boolean> {
 		try {
-			// TODO: Integrate with email service (SendGrid, AWS SES, etc.)
-			console.log('Email notification placeholder:', {
-				to: userEmail,
-				subject: 'New Match Found on FindIt! 🎯',
-				body: this.generateEmailBody(match),
-				match
+			// Send email via our API endpoint
+			const response = await fetch('/api/send-email', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					user_id: match.listing_user_id,
+					type: 'match_found',
+					message: `We found a ${Math.round(match.score * 100)}% match for your listing "${match.listing_title}" with "${match.matched_listing_title}".`,
+					listing_title: match.listing_title
+				})
 			});
 
-			// Store notification record
-			await this.storeNotificationRecord({
-				id: crypto.randomUUID(),
-				user_id: match.listing_user_id, // Fixed: Use the correct user ID
-				match_id: match.match_id,
-				listing_id: match.listing_id,
-				matched_listing_id: match.matched_listing_id,
-				notification_type: 'match_found',
-				sent_via: 'email',
-				sent_at: new Date().toISOString(),
-				read_at: undefined
-			});
+			if (!response.ok) {
+				throw new Error(`Email API returned ${response.status}`);
+			}
 
 			return true;
 		} catch (error) {

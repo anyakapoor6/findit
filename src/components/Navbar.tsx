@@ -559,8 +559,7 @@ export default function Navbar() {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Bell clicked, current state:', showDropdown);
-              setShowDropdown(v => !v);
+              setShowDropdown(!showDropdown);
             }}
             aria-label="Notifications"
           >

@@ -85,13 +85,15 @@ BEGIN
     END IF;
   END IF;
 
-  -- Only check image similarity if category or subcategory matches
-  IF (category_score > 0 OR subcategory_score > 0)
-     AND l1.image_embedding IS NOT NULL AND l2.image_embedding IS NOT NULL THEN
+  -- Check image similarity if both listings have embeddings
+  IF l1.image_embedding IS NOT NULL AND l2.image_embedding IS NOT NULL THEN
     image_similarity_score := 1 - (l1.image_embedding <=> l2.image_embedding);
-    IF image_similarity_score > 0.8 THEN
-      score := score + 0.2;
-      reasons := array_append(reasons, 'Image similarity: ' || round(image_similarity_score * 100)::text || '%');
+    IF image_similarity_score > 0.7 THEN
+      score := score + 0.3; -- Increased weight for visual similarity
+      reasons := array_append(reasons, 'Visual similarity: ' || round(image_similarity_score * 100)::text || '%');
+    ELSIF image_similarity_score > 0.5 THEN
+      score := score + 0.15;
+      reasons := array_append(reasons, 'Moderate visual similarity: ' || round(image_similarity_score * 100)::text || '%');
     END IF;
   END IF;
 

@@ -229,6 +229,7 @@ export default function ProfilePageContent() {
 	const [message, setMessage] = useState('');
 	const [showNamePrompt, setShowNamePrompt] = useState(false);
 	const [showSignIn, setShowSignIn] = useState(false);
+	const [showListings, setShowListings] = useState(true);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const tabOptions = [
@@ -765,26 +766,49 @@ export default function ProfilePageContent() {
 					</ProfileCard>
 
 					<ProfileCard>
-						<SectionTitle>Your Listings ({userListings.length})</SectionTitle>
-						{userListings.length === 0 ? (
-							<EmptyState>
-								<p>You haven&apos;t created any listings yet.</p>
-								<CreateListingButton onClick={handleCreateListing}>
-									Create Your First Listing
-								</CreateListingButton>
-							</EmptyState>
-						) : (
+						<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+							<SectionTitle style={{ marginBottom: 0 }}>Your Listings ({userListings.length})</SectionTitle>
+							<button
+								onClick={() => setShowListings(!showListings)}
+								style={{
+									background: 'none',
+									border: 'none',
+									cursor: 'pointer',
+									fontSize: '1.5rem',
+									color: '#2563eb',
+									padding: '0.25rem',
+									borderRadius: '0.25rem',
+									transition: 'transform 0.2s ease',
+									transform: showListings ? 'rotate(180deg)' : 'rotate(0deg)'
+								}}
+								title={showListings ? 'Hide listings' : 'Show listings'}
+							>
+								▼
+							</button>
+						</div>
+						{showListings && (
 							<>
-								<CreateListingButton onClick={handleCreateListing}>
-									Create New Listing
-								</CreateListingButton>
-								<ListingsGridWrapper>
-									<ListingsGrid>
-										{userListings.map(listing => (
-											<ListingCard key={listing.id} listing={listing} onEdit={() => handleEditListing(listing)} showActions={false} onStatusChange={handleStatusChange} />
-										))}
-									</ListingsGrid>
-								</ListingsGridWrapper>
+								{userListings.length === 0 ? (
+									<EmptyState>
+										<p>You haven&apos;t created any listings yet.</p>
+										<CreateListingButton onClick={handleCreateListing}>
+											Create Your First Listing
+										</CreateListingButton>
+									</EmptyState>
+								) : (
+									<>
+										<CreateListingButton onClick={handleCreateListing}>
+											Create New Listing
+										</CreateListingButton>
+										<ListingsGridWrapper>
+											<ListingsGrid>
+												{userListings.map(listing => (
+													<ListingCard key={listing.id} listing={listing} onEdit={() => handleEditListing(listing)} showActions={false} onStatusChange={handleStatusChange} />
+												))}
+											</ListingsGrid>
+										</ListingsGridWrapper>
+									</>
+								)}
 							</>
 						)}
 					</ProfileCard>

@@ -219,16 +219,31 @@ export default function HomePageClient() {
 		}
 	}, [userChecked, showSignIn]);
 
+	// Enhanced highlighting effect for map navigation
 	useEffect(() => {
-		if (highlightedRef.current) {
-			highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		if (highlightedId && listings.length > 0) {
+			// Find the listing to highlight
+			const listingToHighlight = listings.find(listing => listing.id === highlightedId);
+			if (listingToHighlight) {
+				// Apply highlight immediately
+				setShowHighlight(true);
+
+				// Scroll to the highlighted listing after a short delay to ensure DOM is ready
+				setTimeout(() => {
+					if (highlightedRef.current) {
+						highlightedRef.current.scrollIntoView({
+							behavior: 'smooth',
+							block: 'center'
+						});
+					}
+				}, 100);
+
+				// Remove highlight after 3 seconds
+				const timer = setTimeout(() => setShowHighlight(false), 3000);
+				return () => clearTimeout(timer);
+			}
 		}
-		if (highlightedId) {
-			setShowHighlight(true);
-			const timer = setTimeout(() => setShowHighlight(false), 2500);
-			return () => clearTimeout(timer);
-		}
-	}, [highlightedId]);
+	}, [highlightedId, listings]);
 
 	const handleSignInSuccess = () => {
 		setShowSignIn(false);
@@ -373,7 +388,14 @@ export default function HomePageClient() {
 									<div
 										key={listing.id}
 										ref={isHighlighted ? highlightedRef : undefined}
-										style={isHighlighted ? { boxShadow: '0 0 0 4px #2563eb, 0 4px 16px rgba(0,0,0,0.08)', borderRadius: '1.25rem', transition: 'box-shadow 0.3s' } : {}}
+										style={isHighlighted ? {
+											boxShadow: '0 0 0 4px #2563eb, 0 8px 32px rgba(37, 99, 235, 0.3)',
+											borderRadius: '1.25rem',
+											transition: 'all 0.3s ease',
+											transform: 'scale(1.02)',
+											zIndex: 10,
+											position: 'relative'
+										} : {}}
 									>
 										<ListingCard listing={listing} />
 									</div>

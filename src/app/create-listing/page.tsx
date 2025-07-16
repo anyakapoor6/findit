@@ -135,6 +135,9 @@ const UploadedImage = styled.img`
   max-height: 180px;
   border-radius: 0.75rem;
   border: 2px solid #dbeafe;
+  object-fit: cover;
+  width: 180px;
+  height: 180px;
 `;
 const RemoveButton = styled.button`
   background: #dc2626;
@@ -190,6 +193,8 @@ const CropImage = styled.img`
   max-height: 100%;
   object-fit: contain;
   cursor: move;
+  user-select: none;
+  -webkit-user-drag: none;
 `;
 
 const CropControls = styled.div`
@@ -256,6 +261,7 @@ export default function CreateListingPage() {
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [imagePreview, setImagePreview] = useState<string>('');
 	const [loading, setLoading] = useState(false);
+	const [loadingStep, setLoadingStep] = useState('');
 	const [error, setError] = useState('');
 	const [user, setUser] = useState<User | null>(null);
 	const [showSignIn, setShowSignIn] = useState(false);
@@ -424,6 +430,9 @@ export default function CreateListingPage() {
 		setCustomType('');
 		setCustomSubtype('');
 		setFormData(prev => ({ ...prev, item_type: type, item_subtype: '' }));
+
+		// Clear extra fields when category changes
+		setExtraFields({});
 	};
 	const handleSubtypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		const subtype = e.target.value;
@@ -440,12 +449,14 @@ export default function CreateListingPage() {
 
 	// FIXED: Added cropping functionality
 	const handleCropMouseDown = (e: React.MouseEvent) => {
+		e.preventDefault();
 		setIsDragging(true);
 		setDragStart({ x: e.clientX - cropPosition.x, y: e.clientY - cropPosition.y });
 	};
 
 	const handleCropMouseMove = (e: React.MouseEvent) => {
 		if (!isDragging) return;
+		e.preventDefault();
 		setCropPosition({
 			x: e.clientX - dragStart.x,
 			y: e.clientY - dragStart.y
@@ -471,28 +482,55 @@ export default function CreateListingPage() {
 		const img = new Image();
 
 		img.onload = () => {
-			const size = 400; // Crop area size
-			canvas.width = size;
-			canvas.height = size;
+			const cropSize = 400; // Fixed crop area size
+			canvas.width = cropSize;
+			canvas.height = cropSize;
 
 			if (ctx) {
-				// Calculate the crop area
-				const scaledWidth = img.width * cropScale;
-				const scaledHeight = img.height * cropScale;
+				// Get the displayed image dimensions (400x400 container)
+				const displaySize = 400;
 
-				// Calculate the source rectangle
-				const sourceX = Math.max(0, -cropPosition.x / cropScale);
-				const sourceY = Math.max(0, -cropPosition.y / cropScale);
-				const sourceWidth = Math.min(size / cropScale, img.width - sourceX);
-				const sourceHeight = Math.min(size / cropScale, img.height - sourceY);
+				// Calculate the actual displayed image size within the container
+				const imgAspectRatio = img.width / img.height;
+				let displayedWidth, displayedHeight;
 
+				if (imgAspectRatio > 1) {
+					// Image is wider than tall
+					displayedWidth = displaySize;
+					displayedHeight = displaySize / imgAspectRatio;
+				} else {
+					// Image is taller than wide or square
+					displayedHeight = displaySize;
+					displayedWidth = displaySize * imgAspectRatio;
+				}
+
+				// Calculate the scale factor between displayed and natural image
+				const scaleX = img.width / (displayedWidth * cropScale);
+				const scaleY = img.height / (displayedHeight * cropScale);
+
+				// Calculate the crop area in natural image coordinates
+				// The crop area is always 400x400 in display coordinates
+				const cropAreaSize = displaySize / cropScale;
+
+				// Calculate the center offset of the displayed image
+				const offsetX = (displaySize - displayedWidth) / 2;
+				const offsetY = (displaySize - displayedHeight) / 2;
+
+				// Calculate the source rectangle in natural image coordinates
+				const sourceX = Math.max(0, (-cropPosition.x - offsetX) * scaleX);
+				const sourceY = Math.max(0, (-cropPosition.y - offsetY) * scaleY);
+				const sourceWidth = Math.min(cropAreaSize * scaleX, img.width - sourceX);
+				const sourceHeight = Math.min(cropAreaSize * scaleY, img.height - sourceY);
+
+				// Clear canvas and draw the cropped portion
+				ctx.clearRect(0, 0, cropSize, cropSize);
 				ctx.drawImage(
 					img,
 					sourceX, sourceY, sourceWidth, sourceHeight,
-					0, 0, size, size
+					0, 0, cropSize, cropSize
 				);
 
-				const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+				const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
 				setImagePreview(croppedDataUrl);
 				setShowCropModal(false);
 
@@ -502,6 +540,10 @@ export default function CreateListingPage() {
 					.then(blob => {
 						const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' });
 						setSelectedFile(file);
+					})
+					.catch(error => {
+						console.error('Error creating cropped file:', error);
+						setError('Failed to process cropped image');
 					});
 			}
 		};
@@ -528,6 +570,7 @@ export default function CreateListingPage() {
 		setError('');
 
 		try {
+			// Validation
 			if (!formData.item_type || !formData.title.trim() || !formData.description.trim() || !locationData.address.trim() || !formData.date) {
 				throw new Error('Please fill in all required fields');
 			}
@@ -538,11 +581,15 @@ export default function CreateListingPage() {
 				throw new Error('A photo is required for found items.');
 			}
 
+			// Step 1: Upload image (if present) - this is the most time-consuming part
 			let imageUrl = '';
 			if (selectedFile && user) {
+				setLoadingStep('Uploading image...');
 				imageUrl = await uploadListingImage(selectedFile, user.id);
 			}
 
+			// Step 2: Create listing in database
+			setLoadingStep('Creating listing...');
 			const listingData = {
 				...formData,
 				location: locationData.address,
@@ -553,27 +600,40 @@ export default function CreateListingPage() {
 			};
 
 			const newListing = await addListing(listingData);
-			await triggerEmbedding(
-				newListing.id,
-				newListing.image_url || '',
-				newListing.item_type || '',
-				newListing.item_subtype || ''
-			);
 
-			// --- AI MATCHING & NOTIFICATIONS ---
-			await fetch('/functions/v1/create-matches-for-listing', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ listingId: newListing.id }),
+			// Step 3: Start background processes (non-blocking)
+			// These can run in the background while we redirect the user
+			Promise.allSettled([
+				// Generate embedding (if image exists)
+				imageUrl ? triggerEmbedding(
+					newListing.id,
+					imageUrl,
+					newListing.item_type || '',
+					newListing.item_subtype || ''
+				) : Promise.resolve(),
+
+				// Trigger AI matching
+				fetch('/functions/v1/create-matches-for-listing', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ listingId: newListing.id }),
+				}).catch(error => {
+					console.error('AI matching failed:', error);
+					// Don't fail the submission if AI matching fails
+				})
+			]).catch(error => {
+				console.error('Background processes failed:', error);
+				// Don't fail the submission if background processes fail
 			});
-			// --- END AI MATCHING & NOTIFICATIONS ---
 
+			// Step 4: Redirect immediately after listing is created
 			router.push('/');
 		} catch (err: unknown) {
 			const errorMessage = err instanceof Error ? err.message : 'Failed to create listing';
 			setError(errorMessage);
 		} finally {
 			setLoading(false);
+			setLoadingStep('');
 		}
 	};
 
@@ -669,14 +729,14 @@ export default function CreateListingPage() {
 								name="item_subtype"
 								value={formData.item_subtype || ''}
 								onChange={handleSubtypeChange}
-								disabled={!formData.item_type || formData.item_type === 'other'}
+								disabled={!formData.item_type || formData.item_type === 'other' || !ITEM_TYPES.find(t => t.value === formData.item_type)}
 							>
-								<option value="">{formData.item_type && formData.item_type !== 'other' ? 'Select a subcategory' : 'Select a category first'}</option>
+								<option value="">{formData.item_type && formData.item_type !== 'other' && ITEM_TYPES.find(t => t.value === formData.item_type) ? 'Select a subcategory' : 'Select a category first'}</option>
 								{ITEM_TYPES.find(t => t.value === formData.item_type)?.subtypes.map(sub => (
 									<option key={sub} value={sub}>{sub}</option>
 								))}
 							</StyledSelect>
-							{((formData.item_type === 'other') || (formData.item_subtype === 'Other' && formData.item_type !== 'other')) && (
+							{((formData.item_type === 'other') || (formData.item_subtype === 'Other' && formData.item_type !== 'other') || !ITEM_TYPES.find(t => t.value === formData.item_type)) && (
 								<StyledInput
 									type="text"
 									placeholder="Enter custom subcategory"
@@ -826,7 +886,7 @@ export default function CreateListingPage() {
 						{/* Buttons */}
 						<div style={{ display: 'flex', gap: '1rem', paddingTop: '0.5rem' }}>
 							<SubmitButton type="submit" disabled={loading}>
-								{loading ? 'Submitting...' : 'Create Listing'}
+								{loading ? (loadingStep || 'Submitting...') : 'Create Listing'}
 							</SubmitButton>
 							<button
 								type="button"

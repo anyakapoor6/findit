@@ -75,36 +75,38 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange, label 
 	const [map, setMap] = useState<any>(null);
 	const [marker, setMarker] = useState<any>(null);
 
-	// Load Google Maps script only once using the utility
+	// Load Google Maps script and initialize map/marker
 	useEffect(() => {
 		let isMounted = true;
+		let currentMarker: any = null;
+		let currentMap: any = null;
+		let autocomplete: any = null;
+
 		loadGoogleMapsScript(MAPS_API_KEY as string, ['places']).then(() => {
 			// MOVED: Early return logic inside the effect to avoid breaking hooks order
 			if (isMounted && inputRef.current && mapRef.current) {
 				const google = (window as any).google;
 				// MOVED: Early return logic inside the effect to avoid breaking hooks order
 				if (google?.maps?.places) {
-					const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+					// Initialize autocomplete
+					autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
 						types: ['geocode'],
 						componentRestrictions: { country: 'us' },
 					});
 					autocomplete.addListener('place_changed', () => {
 						const place = autocomplete.getPlace();
 						// MOVED: Early return logic inside the effect to avoid breaking hooks order
-						if (place.geometry) {
+						if (place.geometry && currentMap && currentMarker) {
 							const lat = place.geometry.location.lat();
 							const lng = place.geometry.location.lng();
 							onChange({ address: place.formatted_address || '', lat, lng });
-							if (map) {
-								map.setCenter({ lat, lng });
-								map.setZoom(15);
-							}
-							if (marker) {
-								marker.setPosition({ lat, lng });
-							}
+							currentMap.setCenter({ lat, lng });
+							currentMap.setZoom(15);
+							currentMarker.setPosition({ lat, lng });
 						}
 					});
-					// Initialize map
+
+					// Initialize map only once
 					if (!map) {
 						const gmap = new google.maps.Map(mapRef.current, {
 							center: value.lat !== undefined && value.lng !== undefined ? { lat: value.lat, lng: value.lng } : { lat: 37.7749, lng: -122.4194 },
@@ -112,13 +114,18 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange, label 
 							mapTypeControl: false,
 							streetViewControl: false,
 						});
+						currentMap = gmap;
 						setMap(gmap);
+
+						// Create only one marker
 						const gmarker = new google.maps.Marker({
 							map: gmap,
 							position: value.lat !== undefined && value.lng !== undefined ? { lat: value.lat, lng: value.lng } : undefined,
 							draggable: true,
 						});
+						currentMarker = gmarker;
 						setMarker(gmarker);
+
 						gmarker.addListener('dragend', () => {
 							const pos = gmarker.getPosition();
 							if (pos) {
@@ -129,7 +136,17 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ value, onChange, label 
 				}
 			}
 		});
-		return () => { isMounted = false; };
+
+		// Cleanup function
+		return () => {
+			isMounted = false;
+			if (currentMarker) {
+				currentMarker.setMap(null);
+			}
+			if (autocomplete && (window as any).google?.maps?.event) {
+				(window as any).google.maps.event.clearInstanceListeners(autocomplete);
+			}
+		};
 		// eslint-disable-next-line
 	}, []);
 

@@ -185,30 +185,30 @@ export default function MapPage() {
 		let isMounted = true;
 		loadGoogleMapsScript(MAPS_API_KEY as string, []).then(() => {
 			// MOVED: Early return logic inside the effect to avoid breaking hooks order
-			if (isMounted && mapRef.current && listings.length) {
+			if (isMounted && mapRef.current) {
 				const google = (window as any).google;
+
+				// Initialize map with default center (San Francisco Bay Area)
+				const defaultCenter = { lat: 37.7749, lng: -122.4194 };
+				const gmap = new google.maps.Map(mapRef.current, {
+					center: defaultCenter,
+					zoom: 10,
+					mapTypeControl: false,
+					streetViewControl: false,
+					fullscreenControl: false,
+				});
+
+				// Create info window
+				const infoWin = new google.maps.InfoWindow();
+				setInfoWindow(infoWin);
 
 				// Calculate bounds to fit all markers
 				const bounds = new google.maps.LatLngBounds();
 				const validListings = listings.filter(listing => listing.location_lat && listing.location_lng);
+				let newMarkers: any[] = [];
 
-				// MOVED: Early return logic inside the effect to avoid breaking hooks order
+				// Create markers if there are valid listings
 				if (validListings.length > 0) {
-					// Initialize map
-					const gmap = new google.maps.Map(mapRef.current, {
-						zoom: 10,
-						mapTypeControl: false,
-						streetViewControl: false,
-						fullscreenControl: false,
-					});
-
-					// Create info window
-					const infoWin = new google.maps.InfoWindow();
-					setInfoWindow(infoWin);
-
-					// Create markers
-					const newMarkers: any[] = [];
-
 					validListings.forEach(listing => {
 						// MOVED: Early return logic inside the effect to avoid breaking hooks order
 						if (listing.location_lat && listing.location_lng) {
@@ -246,22 +246,27 @@ export default function MapPage() {
 					});
 
 					setMarkers(newMarkers);
-					setMap(gmap);
 
-					// Fit map to bounds
+					// Fit map to bounds if there are multiple listings
 					if (validListings.length > 1) {
 						gmap.fitBounds(bounds);
 					} else {
 						gmap.setCenter(bounds.getCenter());
 						gmap.setZoom(15);
 					}
-
-					// Cleanup function
-					return () => {
-						newMarkers.forEach(marker => marker.setMap(null));
-					};
 				}
+
+				setMap(gmap);
+
+				// Cleanup function
+				return () => {
+					newMarkers.forEach((marker: any) => marker.setMap(null));
+				};
 			}
+		}).catch((error) => {
+			console.error('Error loading Google Maps:', error);
+			// Set loading to false even if map fails to load
+			setLoading(false);
 		});
 		return () => { isMounted = false; };
 	}, [listings]);
@@ -300,7 +305,7 @@ export default function MapPage() {
 			</Header>
 
 			<MapContainer>
-				{validListings.length === 0 ? (
+				{validListings.length === 0 && !loading ? (
 					<EmptyState>
 						<div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🗺️</div>
 						<h3 style={{ marginBottom: '0.5rem', color: '#111' }}>No items on the map</h3>
