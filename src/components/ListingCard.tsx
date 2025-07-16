@@ -245,7 +245,6 @@ const Title = styled.h3`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  cursor: pointer;
   line-height: 1.2;
 `;
 
@@ -1108,7 +1107,7 @@ export default function ListingCard({
 		setShowImageView(true);
 	};
 
-	const handleTitleClick = (e: React.MouseEvent) => {
+	const handleCardClick = (e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
 		closeAllModals();
@@ -1132,6 +1131,7 @@ export default function ListingCard({
 		<Card
 			$isLost={listing.status === 'lost'}
 			$isResolved={listing.status === 'resolved'}
+			onClick={handleCardClick}
 		>
 			{/* FIXED: Image section with proper event handling */}
 			{listing.image_url ? (
@@ -1149,7 +1149,7 @@ export default function ListingCard({
 			{/* FIXED: Title and Status badge in same row */}
 			<CardHeader>
 				<TitleSection>
-					<Title onClick={handleTitleClick}>{listing.title}</Title>
+					<Title>{listing.title}</Title>
 					{/* FIXED: Tags below title with proper spacing */}
 					<TagRow>
 						{listing.item_type && (
