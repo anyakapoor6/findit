@@ -901,6 +901,39 @@ export default function ListingCard({
 	const [showImageView, setShowImageView] = useState(false);
 	const condensedLocation = listing.location?.split(',')[0] || '';
 
+	// FIXED: Ensure only one modal can be open at a time
+	useEffect(() => {
+		if (showDetails) {
+			setShowImageView(false);
+			setShowClaimModal(false);
+			setShowShareSheet(false);
+		}
+	}, [showDetails]);
+
+	useEffect(() => {
+		if (showImageView) {
+			setShowDetails(false);
+			setShowClaimModal(false);
+			setShowShareSheet(false);
+		}
+	}, [showImageView]);
+
+	useEffect(() => {
+		if (showClaimModal) {
+			setShowDetails(false);
+			setShowImageView(false);
+			setShowShareSheet(false);
+		}
+	}, [showClaimModal]);
+
+	useEffect(() => {
+		if (showShareSheet) {
+			setShowDetails(false);
+			setShowImageView(false);
+			setShowClaimModal(false);
+		}
+	}, [showShareSheet]);
+
 	useEffect(() => {
 		async function fetchInitials() {
 			try {
@@ -965,14 +998,39 @@ export default function ListingCard({
 		setShowShareSheet(true);
 	};
 
+	// FIXED: Proper event handlers with explicit stopPropagation
+	const handleImageClick = (e: React.MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setShowImageView(true);
+	};
+
+	const handleTitleClick = (e: React.MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setShowDetails(true);
+	};
+
+	const handleClaimClick = (e: React.MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setShowClaimModal(true);
+	};
+
+	const handleLocationClick = (e: React.MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setShowFullLocation(!showFullLocation);
+	};
+
 	return (
 		<Card
 			$isLost={listing.status === 'lost'}
 			$isResolved={listing.status === 'resolved'}
 		>
-			{/* FIXED: Image section with click to view - no card-wide onClick conflict */}
+			{/* FIXED: Image section with proper event handling */}
 			{listing.image_url ? (
-				<ImageBox onClick={(e) => { e.stopPropagation(); setShowImageView(true); }}>
+				<ImageBox onClick={handleImageClick}>
 					<CardImage src={listing.image_url} alt={listing.title} />
 				</ImageBox>
 			) : (
@@ -984,7 +1042,7 @@ export default function ListingCard({
 			{/* FIXED: Title and Status badge in same row */}
 			<CardHeader>
 				<TitleSection>
-					<Title onClick={(e) => { e.stopPropagation(); setShowDetails(true); }}>{listing.title}</Title>
+					<Title onClick={handleTitleClick}>{listing.title}</Title>
 					{/* FIXED: Tags below title with proper spacing */}
 					<TagRow>
 						{listing.item_type && (
@@ -1018,7 +1076,7 @@ export default function ListingCard({
 								{listing.location && (
 									<span
 										style={{ color: '#2563eb', marginLeft: 8, cursor: 'pointer', fontWeight: 500, fontSize: '0.97rem' }}
-										onClick={(e) => { e.stopPropagation(); setShowFullLocation(false); }}
+										onClick={handleLocationClick}
 									>
 										Show less
 									</span>
@@ -1030,7 +1088,7 @@ export default function ListingCard({
 								{listing.location && listing.location.length > condensedLocation.length && (
 									<span
 										style={{ color: '#2563eb', marginLeft: 8, cursor: 'pointer', fontWeight: 500, fontSize: '0.97rem' }}
-										onClick={(e) => { e.stopPropagation(); setShowFullLocation(true); }}
+										onClick={handleLocationClick}
 									>
 										Show more
 									</span>
@@ -1048,7 +1106,7 @@ export default function ListingCard({
 			</Info>
 			{/* Claim button for found listings, only for signed-in users who are not the owner, now directly below the date */}
 			{listing.status === 'found' && user && user.id !== listing.user_id && (
-				<ClaimButton onClick={e => { e.stopPropagation(); setShowClaimModal(true); }}>
+				<ClaimButton onClick={handleClaimClick}>
 					I think this is mine
 				</ClaimButton>
 			)}
@@ -1084,11 +1142,19 @@ export default function ListingCard({
 			{/* FIXED: Added initials avatar icon */}
 			<InitialsBox>{initials}</InitialsBox>
 
-			{/* FIXED: Added missing modals */}
-			<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
-			<ListingDetailsModal open={showDetails} onClose={() => setShowDetails(false)} listing={listing} />
-			<ShareSheet open={showShareSheet} onClose={() => setShowShareSheet(false)} listing={listing} />
-			<ImageViewModal open={showImageView} onClose={() => setShowImageView(false)} imageUrl={listing.image_url || ''} title={listing.title} />
+			{/* FIXED: Modals with proper z-index and single modal enforcement */}
+			{showClaimModal && (
+				<ClaimModal open={showClaimModal} onClose={() => setShowClaimModal(false)} listingId={listing.id} />
+			)}
+			{showDetails && (
+				<ListingDetailsModal open={showDetails} onClose={() => setShowDetails(false)} listing={listing} />
+			)}
+			{showShareSheet && (
+				<ShareSheet open={showShareSheet} onClose={() => setShowShareSheet(false)} listing={listing} />
+			)}
+			{showImageView && (
+				<ImageViewModal open={showImageView} onClose={() => setShowImageView(false)} imageUrl={listing.image_url || ''} title={listing.title} />
+			)}
 
 			{showActions && (
 				<Actions>
