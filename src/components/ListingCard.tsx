@@ -472,8 +472,33 @@ function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () =
 
 	if (!open) return null;
 	return createPortal(
-		<div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-			<div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, maxWidth: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', color: '#111' }}>
+		<div style={{
+			position: 'fixed',
+			top: 0,
+			left: 0,
+			width: '100vw',
+			height: '100vh',
+			background: 'rgba(0,0,0,0.5)',
+			zIndex: 1800,
+			display: 'flex',
+			alignItems: 'center',
+			justifyContent: 'center',
+			backdropFilter: 'blur(4px)',
+			padding: '20px'
+		}}>
+			<div style={{
+				background: '#fff',
+				borderRadius: 12,
+				padding: 32,
+				minWidth: 320,
+				maxWidth: 500,
+				width: '90vw',
+				maxHeight: '90vh',
+				overflowY: 'auto',
+				boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+				color: '#111',
+				border: '1px solid #e5e7eb'
+			}}>
 				<h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: 16, color: '#111' }}>Claim Listing</h2>
 				{success ? (
 					<div style={{ color: '#059669', fontWeight: 600, textAlign: 'center', margin: '2rem 0' }}>Claim submitted!</div>
@@ -627,7 +652,8 @@ function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClos
 				overflowY: 'auto',
 				boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
 				color: '#111',
-				position: 'relative'
+				position: 'relative',
+				border: '1px solid #e5e7eb'
 			}}>
 				<button onClick={onClose} style={{
 					position: 'absolute',
@@ -638,12 +664,13 @@ function ListingDetailsModal({ open, onClose, listing }: { open: boolean, onClos
 					borderRadius: 8,
 					padding: 6,
 					cursor: 'pointer',
-					fontWeight: 700
-				}}>Close</button>
+					fontWeight: 700,
+					fontSize: '1.1rem'
+				}}>✕</button>
 				<h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: 16 }}>{listing.title}</h2>
 				<div style={{ marginBottom: 12 }}><b>Status:</b> {listing.status}</div>
 				<div style={{ marginBottom: 12 }}><b>Category:</b> {listing.item_type}</div>
-				<div style={{ marginBottom: 12 }}><b>Subcategory:</b> {listing.item_subtype}</div>
+				<div style={{ marginBottom: 12 }}><b>Subcategory:</b> {listing.item_subtype || 'N/A'}</div>
 				<div style={{ marginBottom: 12 }}><b>Description:</b> {listing.description}</div>
 				<div style={{ marginBottom: 12 }}><b>Location:</b> {listing.location}</div>
 				<div style={{ marginBottom: 12 }}><b>Date:</b> {formatDateUS(listing.date)}</div>
@@ -710,9 +737,45 @@ function ShareSheet({ open, onClose, listing }: { open: boolean, onClose: () => 
 
 	if (!open) return null;
 	return (
-		<div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-			<div style={{ background: '#18181b', color: '#fff', borderRadius: 16, padding: '2.2rem 2.2rem 1.5rem 2.2rem', maxWidth: 420, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', position: 'relative' }}>
-				<button onClick={onClose} style={{ position: 'absolute', top: 12, right: 12, background: '#23232b', color: '#fff', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', fontWeight: 700 }}>Close</button>
+		<div style={{
+			position: 'fixed',
+			top: 0,
+			left: 0,
+			width: '100vw',
+			height: '100vh',
+			background: 'rgba(0,0,0,0.5)',
+			zIndex: 1500,
+			display: 'flex',
+			alignItems: 'center',
+			justifyContent: 'center',
+			backdropFilter: 'blur(4px)'
+		}}>
+			<div style={{
+				background: '#18181b',
+				color: '#fff',
+				borderRadius: 16,
+				padding: '2.2rem 2.2rem 1.5rem 2.2rem',
+				maxWidth: 420,
+				width: '90vw',
+				maxHeight: '90vh',
+				overflowY: 'auto',
+				boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+				position: 'relative',
+				border: '1px solid #27272a'
+			}}>
+				<button onClick={onClose} style={{
+					position: 'absolute',
+					top: 12,
+					right: 12,
+					background: '#23232b',
+					color: '#fff',
+					border: 'none',
+					borderRadius: 8,
+					padding: 6,
+					cursor: 'pointer',
+					fontWeight: 700,
+					fontSize: '1.1rem'
+				}}>✕</button>
 				<div style={{ fontWeight: 700, fontSize: '1.18rem', marginBottom: 8 }}>
 					✨ Good News!
 				</div>
@@ -745,12 +808,13 @@ function ImageViewModal({ open, onClose, imageUrl, title }: { open: boolean, onC
 			left: 0,
 			width: '100vw',
 			height: '100vh',
-			background: 'rgba(0,0,0,0.9)',
+			background: 'rgba(0,0,0,0.8)',
 			zIndex: 3000,
 			display: 'flex',
 			alignItems: 'center',
 			justifyContent: 'center',
-			backdropFilter: 'blur(8px)'
+			backdropFilter: 'blur(8px)',
+			padding: '20px'
 		}}>
 			<div style={{
 				position: 'relative',
@@ -758,39 +822,59 @@ function ImageViewModal({ open, onClose, imageUrl, title }: { open: boolean, onC
 				maxHeight: '90vh',
 				display: 'flex',
 				flexDirection: 'column',
-				alignItems: 'center'
+				alignItems: 'center',
+				background: '#fff',
+				borderRadius: 12,
+				padding: '24px',
+				boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+				border: '1px solid #e5e7eb',
+				overflow: 'hidden'
 			}}>
 				<button onClick={onClose} style={{
 					position: 'absolute',
-					top: -40,
-					right: 0,
-					background: 'rgba(255,255,255,0.2)',
-					color: '#fff',
-					border: 'none',
+					top: '12px',
+					right: '12px',
+					background: 'rgba(255,255,255,0.9)',
+					color: '#111',
+					border: '1px solid #e5e7eb',
 					borderRadius: 8,
 					padding: '8px 12px',
 					cursor: 'pointer',
 					fontWeight: 700,
-					fontSize: '1.1rem'
+					fontSize: '1.1rem',
+					zIndex: 1
 				}}>✕</button>
 				<h3 style={{
-					color: '#fff',
+					color: '#111',
 					marginBottom: 16,
 					fontSize: '1.2rem',
 					fontWeight: 600,
-					textAlign: 'center'
+					textAlign: 'center',
+					maxWidth: '100%',
+					overflow: 'hidden',
+					textOverflow: 'ellipsis',
+					whiteSpace: 'nowrap'
 				}}>{title}</h3>
-				<img
-					src={imageUrl}
-					alt={title}
-					style={{
-						maxWidth: '100%',
-						maxHeight: '70vh',
-						objectFit: 'contain',
-						borderRadius: 8,
-						boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
-					}}
-				/>
+				<div style={{
+					maxWidth: '100%',
+					maxHeight: 'calc(90vh - 120px)',
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					overflow: 'hidden'
+				}}>
+					<img
+						src={imageUrl}
+						alt={title}
+						style={{
+							maxWidth: '100%',
+							maxHeight: '100%',
+							objectFit: 'contain',
+							borderRadius: 8,
+							boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
+						}}
+					/>
+				</div>
 			</div>
 		</div>
 	);
@@ -885,11 +969,10 @@ export default function ListingCard({
 		<Card
 			$isLost={listing.status === 'lost'}
 			$isResolved={listing.status === 'resolved'}
-			onClick={() => setShowDetails(true)}
 		>
-			{/* FIXED: Image section with click to view */}
+			{/* FIXED: Image section with click to view - no card-wide onClick conflict */}
 			{listing.image_url ? (
-				<ImageBox onClick={() => setShowImageView(true)}>
+				<ImageBox onClick={(e) => { e.stopPropagation(); setShowImageView(true); }}>
 					<CardImage src={listing.image_url} alt={listing.title} />
 				</ImageBox>
 			) : (

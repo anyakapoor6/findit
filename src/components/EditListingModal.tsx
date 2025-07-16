@@ -11,11 +11,12 @@ const ModalOverlay = styled.div`
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.3);
-  z-index: 2000;
+  background: rgba(0,0,0,0.5);
+  z-index: 2500;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(4px);
 `;
 const ModalContent = styled.div`
   background: #fff;
@@ -177,123 +178,123 @@ const DeleteButton = styled.button`
 `;
 
 interface EditListingModalProps {
-	listing: Listing;
-	onClose: () => void;
-	onSave: (updated: Listing) => void;
-	onDelete?: (deletedId: string) => void;
+  listing: Listing;
+  onClose: () => void;
+  onSave: (updated: Listing) => void;
+  onDelete?: (deletedId: string) => void;
 }
 
 export default function EditListingModal({ listing, onClose, onSave, onDelete }: EditListingModalProps) {
-	const [formData, setFormData] = useState<CreateListingData>({
-		title: listing.title,
-		description: listing.description,
-		status: listing.status,
-		location: listing.location,
-		date: listing.date.split('T')[0],
-		image_url: listing.image_url || ''
-	});
-	const [selectedFile, setSelectedFile] = useState<File | null>(null);
-	const [imagePreview, setImagePreview] = useState<string>(listing.image_url || '');
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState('');
-	const [deleteLoading, setDeleteLoading] = useState(false);
+  const [formData, setFormData] = useState<CreateListingData>({
+    title: listing.title,
+    description: listing.description,
+    status: listing.status,
+    location: listing.location,
+    date: listing.date.split('T')[0],
+    image_url: listing.image_url || ''
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>(listing.image_url || '');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-		const { name, value } = e.target;
-		setFormData(prev => ({ ...prev, [name]: value }));
-	};
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			setSelectedFile(file);
-			setImagePreview(URL.createObjectURL(file));
-		}
-	};
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
 
-	const removeImage = () => {
-		setSelectedFile(null);
-		setImagePreview('');
-		setFormData(prev => ({ ...prev, image_url: '' }));
-	};
+  const removeImage = () => {
+    setSelectedFile(null);
+    setImagePreview('');
+    setFormData(prev => ({ ...prev, image_url: '' }));
+  };
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setError('');
-		if (formData.status === 'found' && !imagePreview) {
-			setError('Found listings must have an image.');
-			return;
-		}
-		setLoading(true);
-		let imageUrl = formData.image_url;
-		try {
-			if (selectedFile) {
-				imageUrl = await uploadListingImage(selectedFile, listing.user_id);
-			}
-			const updated = await updateListing(listing.id, {
-				...formData,
-				image_url: imageUrl
-			});
-			onSave(updated);
-		} catch (err: any) {
-			setError('Failed to update listing.');
-		} finally {
-			setLoading(false);
-		}
-	};
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (formData.status === 'found' && !imagePreview) {
+      setError('Found listings must have an image.');
+      return;
+    }
+    setLoading(true);
+    let imageUrl = formData.image_url;
+    try {
+      if (selectedFile) {
+        imageUrl = await uploadListingImage(selectedFile, listing.user_id);
+      }
+      const updated = await updateListing(listing.id, {
+        ...formData,
+        image_url: imageUrl
+      });
+      onSave(updated);
+    } catch (err: any) {
+      setError('Failed to update listing.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-	const handleDelete = async () => {
-		if (!window.confirm('Are you sure you want to delete this listing? This action cannot be undone.')) return;
-		setDeleteLoading(true);
-		try {
-			await deleteListing(listing.id);
-			if (onDelete) onDelete(listing.id);
-			onClose();
-		} catch (err) {
-			setError('Failed to delete listing.');
-		} finally {
-			setDeleteLoading(false);
-		}
-	};
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this listing? This action cannot be undone.')) return;
+    setDeleteLoading(true);
+    try {
+      await deleteListing(listing.id);
+      if (onDelete) onDelete(listing.id);
+      onClose();
+    } catch (err) {
+      setError('Failed to delete listing.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
-	return (
-		<ModalOverlay>
-			<ModalContent>
-				<Heading>Edit Listing</Heading>
-				<form onSubmit={handleSubmit}>
-					<Label htmlFor="title">Title</Label>
-					<StyledInput name="title" value={formData.title} onChange={handleInputChange} required />
-					<Label htmlFor="description">Description</Label>
-					<StyledTextArea name="description" value={formData.description} onChange={handleInputChange} required />
-					<Label htmlFor="status">Status</Label>
-					<StyledSelect name="status" value={formData.status} onChange={handleInputChange} required>
-						<option value="lost">Lost</option>
-						<option value="found">Found</option>
-					</StyledSelect>
-					<Label htmlFor="location">Location</Label>
-					<StyledInput name="location" value={formData.location} onChange={handleInputChange} required />
-					<Label htmlFor="date">Date</Label>
-					<StyledInput name="date" type="date" value={formData.date} onChange={handleInputChange} required />
-					<Label>Image</Label>
-					<UploadBox>
-						<UploadLabel htmlFor="edit-listing-image">{imagePreview ? 'Change Image' : 'Upload Image'}</UploadLabel>
-						<input id="edit-listing-image" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
-						{imagePreview && <UploadedImage src={imagePreview} alt="Preview" />}
-						{imagePreview && <RemoveButton type="button" onClick={removeImage}>Remove</RemoveButton>}
-					</UploadBox>
-					{formData.status === 'found' && !imagePreview && (
-						<div style={{ color: '#dc2626', fontWeight: 600, marginBottom: 8 }}>
-							Found listings must have an image.
-						</div>
-					)}
-					{error && <div style={{ color: '#dc2626', fontWeight: 600, marginBottom: 8 }}>{error}</div>}
-					<SubmitButton type="submit" disabled={loading || (formData.status === 'found' && !imagePreview)}>{loading ? 'Saving...' : 'Save Changes'}</SubmitButton>
-					<CancelButton type="button" onClick={onClose}>Cancel</CancelButton>
-					<DeleteButton type="button" onClick={handleDelete} disabled={deleteLoading}>
-						{deleteLoading ? 'Deleting...' : 'Delete Listing'}
-					</DeleteButton>
-				</form>
-			</ModalContent>
-		</ModalOverlay>
-	);
+  return (
+    <ModalOverlay>
+      <ModalContent>
+        <Heading>Edit Listing</Heading>
+        <form onSubmit={handleSubmit}>
+          <Label htmlFor="title">Title</Label>
+          <StyledInput name="title" value={formData.title} onChange={handleInputChange} required />
+          <Label htmlFor="description">Description</Label>
+          <StyledTextArea name="description" value={formData.description} onChange={handleInputChange} required />
+          <Label htmlFor="status">Status</Label>
+          <StyledSelect name="status" value={formData.status} onChange={handleInputChange} required>
+            <option value="lost">Lost</option>
+            <option value="found">Found</option>
+          </StyledSelect>
+          <Label htmlFor="location">Location</Label>
+          <StyledInput name="location" value={formData.location} onChange={handleInputChange} required />
+          <Label htmlFor="date">Date</Label>
+          <StyledInput name="date" type="date" value={formData.date} onChange={handleInputChange} required />
+          <Label>Image</Label>
+          <UploadBox>
+            <UploadLabel htmlFor="edit-listing-image">{imagePreview ? 'Change Image' : 'Upload Image'}</UploadLabel>
+            <input id="edit-listing-image" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+            {imagePreview && <UploadedImage src={imagePreview} alt="Preview" />}
+            {imagePreview && <RemoveButton type="button" onClick={removeImage}>Remove</RemoveButton>}
+          </UploadBox>
+          {formData.status === 'found' && !imagePreview && (
+            <div style={{ color: '#dc2626', fontWeight: 600, marginBottom: 8 }}>
+              Found listings must have an image.
+            </div>
+          )}
+          {error && <div style={{ color: '#dc2626', fontWeight: 600, marginBottom: 8 }}>{error}</div>}
+          <SubmitButton type="submit" disabled={loading || (formData.status === 'found' && !imagePreview)}>{loading ? 'Saving...' : 'Save Changes'}</SubmitButton>
+          <CancelButton type="button" onClick={onClose}>Cancel</CancelButton>
+          <DeleteButton type="button" onClick={handleDelete} disabled={deleteLoading}>
+            {deleteLoading ? 'Deleting...' : 'Delete Listing'}
+          </DeleteButton>
+        </form>
+      </ModalContent>
+    </ModalOverlay>
+  );
 } 

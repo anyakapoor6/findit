@@ -191,7 +191,7 @@ const SkeletonLink = styled.div`
 
 export default function Navbar() {
   const router = useRouter();
-  // FIXED: Client-side only pathname state
+  // FIXED: Client-side only pathname state with better initialization
   const [pathname, setPathname] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -200,16 +200,21 @@ export default function Navbar() {
   const [hasUnread, setHasUnread] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // FIXED: Client-side only effect to prevent hydration issues
   useEffect(() => {
     setIsClient(true);
+    setIsLoading(false);
   }, []);
 
-  // FIXED: Pathname effect - only run on client-side with proper guards
+  // FIXED: Reset state when pathname changes to prevent corruption
   useEffect(() => {
     if (!isClient || typeof window === 'undefined') return;
+
+    // Reset dropdown and other state when navigating
+    setShowDropdown(false);
 
     // Get initial pathname
     setPathname(window.location.pathname);
@@ -217,7 +222,10 @@ export default function Navbar() {
     // Listen for route changes using popstate
     const handleRouteChange = () => {
       if (typeof window !== 'undefined') {
-        setPathname(window.location.pathname);
+        const newPathname = window.location.pathname;
+        setPathname(newPathname);
+        // Reset state on navigation
+        setShowDropdown(false);
       }
     };
 
@@ -274,6 +282,41 @@ export default function Navbar() {
       listener?.subscription.unsubscribe();
     };
   }, [isClient]);
+
+  // FIXED: Force reset state on window focus to handle edge cases
+  useEffect(() => {
+    if (!isClient || typeof window === 'undefined') return;
+
+    const handleFocus = () => {
+      // Reset state when window regains focus (e.g., after modal interactions)
+      setShowDropdown(false);
+    };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      // Reset dropdown if clicking outside
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('click', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isClient]);
+
+  // FIXED: Cleanup effect to reset state on unmount
+  useEffect(() => {
+    return () => {
+      // Reset state when component unmounts
+      setShowDropdown(false);
+      setNotifications([]);
+      setHasUnread(false);
+    };
+  }, []);
 
   // Real-time notification subscription
   useEffect(() => {
@@ -401,21 +444,34 @@ export default function Navbar() {
     return pathname.startsWith(href);
   };
 
-  // FIXED: Show loading skeleton during initial hydration
-  if (!isClient || !authChecked) {
+  // FIXED: Don't render anything until client-side hydration is complete
+  if (!isClient || isLoading) {
     return (
-      <Nav>
-        <NavContainer>
-          <Logo>FindIt</Logo>
-          <NavSkeleton>
-            <SkeletonLink />
-            <SkeletonLink />
-            <SkeletonLink />
-            <SkeletonLink />
-            <SkeletonLink />
-          </NavSkeleton>
-        </NavContainer>
-      </Nav>
+      <nav style={{
+        background: '#fff',
+        borderBottom: '1px solid #e5e7eb',
+        padding: '1rem 2rem',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb' }}>
+            FindIt
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ width: '60px', height: '20px', background: '#f3f4f6', borderRadius: '4px' }}></div>
+            <div style={{ width: '80px', height: '20px', background: '#f3f4f6', borderRadius: '4px' }}></div>
+          </div>
+        </div>
+      </nav>
     );
   }
 
