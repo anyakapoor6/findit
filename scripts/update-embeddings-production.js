@@ -23,14 +23,40 @@ const openai = new OpenAI({ apiKey: openaiApiKey });
 
 async function generateImageEmbedding(imageUrl) {
 	try {
-		const response = await openai.embeddings.create({
-			model: "text-embedding-3-small", // This model returns 1536 dimensions
-			input: imageUrl,
+		// First, get a detailed description of the image using vision model
+		const visionResponse = await openai.chat.completions.create({
+			model: "gpt-4o",
+			messages: [
+				{
+					role: "user",
+					content: [
+						{
+							type: "text",
+							text: "Generate a detailed description of this image that can be used for matching with similar items. Focus on visual characteristics, colors, shapes, materials, and any distinctive features."
+						},
+						{
+							type: "image_url",
+							image_url: {
+								url: imageUrl
+							}
+						}
+					]
+				}
+			],
+			max_tokens: 300
+		});
+
+		const imageDescription = visionResponse.choices[0].message.content;
+
+		// Now generate embedding from the description
+		const embeddingResponse = await openai.embeddings.create({
+			model: "text-embedding-3-small",
+			input: imageDescription,
 			encoding_format: "float",
 		});
 
 		// Truncate to 512 dimensions to match database column
-		const embedding = response.data[0].embedding.slice(0, 512);
+		const embedding = embeddingResponse.data[0].embedding.slice(0, 512);
 		return embedding;
 	} catch (error) {
 		console.error('Error generating image embedding:', error);

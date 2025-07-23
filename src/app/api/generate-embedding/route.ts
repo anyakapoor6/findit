@@ -11,6 +11,27 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: 'No image URL provided' }, { status: 400 });
 		}
 
+		// Check if embedding already exists to avoid duplicate API calls
+		const { data: existingListing, error: fetchError } = await supabase
+			.from('listings')
+			.select('image_embedding')
+			.eq('id', listingId)
+			.single();
+
+		if (fetchError) {
+			console.error('Error fetching existing listing:', fetchError);
+			return NextResponse.json({ error: 'Failed to fetch listing' }, { status: 500 });
+		}
+
+		// If embedding already exists, skip generation
+		if (existingListing.image_embedding) {
+			return NextResponse.json({
+				success: true,
+				embedding_length: existingListing.image_embedding.length,
+				cached: true
+			});
+		}
+
 		// Generate image embedding using OpenAI CLIP or similar
 		const embedding = await generateImageEmbedding(imageUrl);
 
@@ -22,7 +43,7 @@ export async function POST(request: NextRequest) {
 		const { error: updateError } = await supabase
 			.from('listings')
 			.update({
-				image_embed: embedding,
+				image_embedding: embedding,
 				updated_at: new Date().toISOString()
 			})
 			.eq('id', listingId);
@@ -62,15 +83,33 @@ async function generateImageEmbedding(imageUrl: string): Promise<number[] | null
 
 async function generateOpenAICLIPEmbedding(imageUrl: string): Promise<number[] | null> {
 	try {
-		const response = await fetch('https://api.openai.com/v1/embeddings', {
+		// Use OpenAI's vision model for image embeddings
+		const response = await fetch('https://api.openai.com/v1/chat/completions', {
 			method: 'POST',
 			headers: {
 				'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
-				input: imageUrl,
-				model: 'text-embedding-3-small' // or use a vision model if available
+				model: 'gpt-4o',
+				messages: [
+					{
+						role: 'user',
+						content: [
+							{
+								type: 'text',
+								text: 'Generate a detailed description of this image that can be used for matching with similar items. Focus on visual characteristics, colors, shapes, materials, and any distinctive features.'
+							},
+							{
+								type: 'image_url',
+								image_url: {
+									url: imageUrl
+								}
+							}
+						]
+					}
+				],
+				max_tokens: 300
 			}),
 		});
 
@@ -79,7 +118,30 @@ async function generateOpenAICLIPEmbedding(imageUrl: string): Promise<number[] |
 		}
 
 		const data = await response.json();
-		return data.data[0].embedding;
+		const imageDescription = data.choices[0].message.content;
+
+		// Now generate embedding from the description
+		const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				input: imageDescription,
+				model: 'text-embedding-3-small'
+			}),
+		});
+
+		if (!embeddingResponse.ok) {
+			throw new Error(`OpenAI embedding API error: ${embeddingResponse.status}`);
+		}
+
+		const embeddingData = await embeddingResponse.json();
+		const fullEmbedding = embeddingData.data[0].embedding;
+
+		// Truncate to 512 dimensions to match database column
+		return fullEmbedding.slice(0, 512);
 	} catch (error) {
 		console.error('OpenAI CLIP embedding error:', error);
 		return null;

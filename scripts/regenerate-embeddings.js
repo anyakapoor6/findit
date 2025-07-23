@@ -41,6 +41,7 @@ async function generateImageEmbedding(imageUrl) {
 		});
 
 		const imageDescription = visionResponse.choices[0].message.content;
+		console.log(`  Generated description: ${imageDescription.substring(0, 100)}...`);
 
 		// Now generate embedding from the description
 		const embeddingResponse = await openai.embeddings.create({
@@ -58,25 +59,24 @@ async function generateImageEmbedding(imageUrl) {
 	}
 }
 
-async function updateExistingListings() {
-	console.log('Starting to update existing listings with image embeddings...');
+async function regenerateAllEmbeddings() {
+	console.log('🔄 Starting to regenerate all image embeddings with improved vision model...');
 
 	try {
-		// Get all listings that don't have image embeddings yet
+		// Get all listings with images
 		const { data: listings, error } = await supabase
 			.from('listings')
-			.select('id, image_url')
-			.is('image_embedding', null)
+			.select('id, title, image_url')
 			.not('image_url', 'is', null);
 
 		if (error) {
 			throw error;
 		}
 
-		console.log(`Found ${listings.length} listings without image embeddings`);
+		console.log(`Found ${listings.length} listings with images to regenerate`);
 
 		if (listings.length === 0) {
-			console.log('All listings already have image embeddings!');
+			console.log('No listings with images found!');
 			return;
 		}
 
@@ -85,7 +85,7 @@ async function updateExistingListings() {
 
 		for (const listing of listings) {
 			try {
-				console.log(`Processing listing ${listing.id}...`);
+				console.log(`\nProcessing listing "${listing.title}" (${listing.id})...`);
 
 				const embedding = await generateImageEmbedding(listing.image_url);
 
@@ -108,26 +108,37 @@ async function updateExistingListings() {
 				}
 
 				// Add a small delay to avoid overwhelming the API
-				await new Promise(resolve => setTimeout(resolve, 200));
+				await new Promise(resolve => setTimeout(resolve, 500));
 			} catch (error) {
 				console.error(`Error processing listing ${listing.id}:`, error);
 				failed++;
 			}
 		}
 
-		console.log(`\n✅ Processing complete!`);
+		console.log(`\n✅ Regeneration complete!`);
 		console.log(`Processed: ${processed} listings`);
 		console.log(`Failed: ${failed} listings`);
 
+		// After regenerating, trigger match recalculation
+		console.log('\n🔄 Triggering match recalculation...');
+		for (const listing of listings) {
+			try {
+				await supabase.rpc('find_matches_for_listing', { new_listing_id: listing.id });
+				console.log(`✓ Recalculated matches for ${listing.id}`);
+			} catch (error) {
+				console.error(`Failed to recalculate matches for ${listing.id}:`, error);
+			}
+		}
+
 	} catch (error) {
-		console.error('Error updating listings:', error);
+		console.error('Error regenerating embeddings:', error);
 	}
 }
 
 // Run the script
-updateExistingListings()
+regenerateAllEmbeddings()
 	.then(() => {
-		console.log('Script completed');
+		console.log('\n✅ Script completed');
 		process.exit(0);
 	})
 	.catch((error) => {

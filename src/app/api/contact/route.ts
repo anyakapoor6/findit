@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '../../../utils/supabaseClient';
+import { sendGmailEmail } from '../../../lib/gmail';
 
 const supabase = createSupabaseClient();
 
@@ -40,38 +41,29 @@ ${photoUrl ? `Photo: ${photoUrl}` : ''}
 Sent from FindIt Contact Form
     `;
 
-		// Send email notification to your contact email
-		// This will send an email to finditcontact6@gmail.com
+		// Send email using Gmail API
 		try {
-			// Use a simple email forwarding service
-			const emailData = {
+			const htmlContent = `
+        <h2>New Contact Form Submission</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Message:</strong></p>
+        <p>${message.replace(/\n/g, '<br>')}</p>
+        ${photoUrl ? `<p><strong>Photo:</strong> <a href="${photoUrl}">View Photo</a></p>` : ''}
+        <hr>
+        <p><em>Sent from FindIt Contact Form</em></p>
+      `;
+
+			await sendGmailEmail({
 				to: 'finditcontact6@gmail.com',
 				subject: `New Contact Form Message from ${name}`,
 				text: emailContent,
-				html: `
-          <h2>New Contact Form Submission</h2>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Message:</strong></p>
-          <p>${message.replace(/\n/g, '<br>')}</p>
-          ${photoUrl ? `<p><strong>Photo:</strong> <a href="${photoUrl}">View Photo</a></p>` : ''}
-          <hr>
-          <p><em>Sent from FindIt Contact Form</em></p>
-        `
-			};
+				html: htmlContent
+			});
 
-			// For now, log the email data so you can see what would be sent
-			console.log('=== EMAIL TO BE SENT ===');
-			console.log('To:', emailData.to);
-			console.log('Subject:', emailData.subject);
-			console.log('Content:', emailData.text);
-			console.log('========================');
-
-			// TODO: Replace this with your preferred email service
-			// Options: Gmail API, SendGrid, Mailgun, or a simple webhook service
-
+			console.log('✅ Email sent successfully to finditcontact6@gmail.com');
 		} catch (emailError) {
-			console.error('Email service error:', emailError);
+			console.error('❌ Gmail API error:', emailError);
 			// Still continue since we stored the message in the database
 		}
 
