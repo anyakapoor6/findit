@@ -595,8 +595,15 @@ export default function CreateListingPage() {
 
 			// Step 2: Create listing in database
 			setLoadingStep('Creating listing...');
+
+			// Use custom type/subtype values if "other" is selected
+			const finalItemType = formData.item_type === 'other' ? customType : formData.item_type;
+			const finalItemSubtype = formData.item_subtype === 'Other' || formData.item_type === 'other' ? customSubtype : formData.item_subtype;
+
 			const listingData = {
 				...formData,
+				item_type: finalItemType,
+				item_subtype: finalItemSubtype,
 				location: locationData.address,
 				location_lat: locationData.lat,
 				location_lng: locationData.lng,
@@ -613,8 +620,8 @@ export default function CreateListingPage() {
 				imageUrl ? triggerEmbedding(
 					newListing.id,
 					imageUrl,
-					newListing.item_type || '',
-					newListing.item_subtype || ''
+					finalItemType || '',
+					finalItemSubtype || ''
 				) : Promise.resolve(),
 
 				// Trigger AI matching
@@ -720,6 +727,11 @@ export default function CreateListingPage() {
 									value={customType}
 									onChange={e => {
 										setCustomType(e.target.value);
+										// Don't update formData.item_type until user finishes typing
+										// This prevents the dropdown from changing while typing
+									}}
+									onBlur={e => {
+										// Update formData.item_type when user finishes typing
 										setFormData(prev => ({ ...prev, item_type: e.target.value }));
 									}}
 									required
@@ -748,6 +760,10 @@ export default function CreateListingPage() {
 									value={customSubtype}
 									onChange={e => {
 										setCustomSubtype(e.target.value);
+										// Don't update formData.item_subtype until user finishes typing
+									}}
+									onBlur={e => {
+										// Update formData.item_subtype when user finishes typing
 										setFormData(prev => ({ ...prev, item_subtype: e.target.value }));
 									}}
 									required
