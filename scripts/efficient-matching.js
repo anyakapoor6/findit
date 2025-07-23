@@ -46,6 +46,7 @@ async function implementEfficientMatching() {
 		let matchesCreated = 0;
 		let sameCategoryMatchesCount = 0;
 		let crossCategoryMatches = 0;
+		const createdMatches = new Set(); // Track created matches to avoid duplicates
 
 		// Process each listing
 		for (const listing of listings) {
@@ -70,12 +71,18 @@ async function implementEfficientMatching() {
 
 				// Process same-category matches with lower threshold
 				for (const match of sameCategoryMatches) {
-					const score = calculateMatchScore(listing, match);
-					if (score > 0.25) { // Lower threshold for same category
-						await createMatch(listing.id, match.id, score, listing, match);
-						matchesCreated++;
-						sameCategoryMatchesCount++;
-						console.log(`   ✅ Created same-category match: ${(score * 100).toFixed(1)}%`);
+					// Create a unique key for this match pair to avoid duplicates
+					const matchKey = [listing.id, match.id].sort().join('-');
+
+					if (!createdMatches.has(matchKey)) {
+						const score = calculateMatchScore(listing, match);
+						if (score > 0.25) { // Lower threshold for same category
+							await createMatch(listing.id, match.id, score, listing, match);
+							matchesCreated++;
+							sameCategoryMatchesCount++;
+							createdMatches.add(matchKey);
+							console.log(`   ✅ Created same-category match: ${(score * 100).toFixed(1)}%`);
+						}
 					}
 				}
 
@@ -95,12 +102,18 @@ async function implementEfficientMatching() {
 					console.log(`   Cross-category with images: ${crossCategoryWithImages.length}`);
 
 					for (const match of crossCategoryWithImages) {
-						const score = calculateMatchScore(listing, match);
-						if (score > 0.6) { // Very high threshold for cross-category
-							await createMatch(listing.id, match.id, score, listing, match);
-							matchesCreated++;
-							crossCategoryMatches++;
-							console.log(`   ✅ Created cross-category match: ${(score * 100).toFixed(1)}%`);
+						// Create a unique key for this match pair to avoid duplicates
+						const matchKey = [listing.id, match.id].sort().join('-');
+
+						if (!createdMatches.has(matchKey)) {
+							const score = calculateMatchScore(listing, match);
+							if (score > 0.6) { // Very high threshold for cross-category
+								await createMatch(listing.id, match.id, score, listing, match);
+								matchesCreated++;
+								crossCategoryMatches++;
+								createdMatches.add(matchKey);
+								console.log(`   ✅ Created cross-category match: ${(score * 100).toFixed(1)}%`);
+							}
 						}
 					}
 				}
@@ -205,23 +218,23 @@ function calculateMatchScore(listing1, listing2) {
 			// Weight the visual similarity based on actual similarity
 			if (similarity > 0.95) {
 				// Nearly identical images
-				score += 0.3;
+				score += 0.35;
 				reasons.push(`Identical visual similarity: ${Math.round(similarity * 100)}%`);
 			} else if (similarity > 0.90) {
 				// Very similar images
-				score += 0.2;
+				score += 0.25;
 				reasons.push(`High visual similarity: ${Math.round(similarity * 100)}%`);
 			} else if (similarity > 0.80) {
 				// Moderately similar images
-				score += 0.1;
+				score += 0.15;
 				reasons.push(`Visual similarity: ${Math.round(similarity * 100)}%`);
 			} else if (similarity > 0.70) {
 				// Slightly similar images
-				score += 0.05;
+				score += 0.08;
 				reasons.push(`Moderate visual similarity: ${Math.round(similarity * 100)}%`);
 			} else if (similarity > 0.60) {
 				// Barely similar images
-				score += 0.02;
+				score += 0.03;
 				reasons.push(`Low visual similarity: ${Math.round(similarity * 100)}%`);
 			}
 			// Below 0.60 similarity gets no bonus
