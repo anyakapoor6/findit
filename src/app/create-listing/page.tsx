@@ -473,12 +473,16 @@ export default function CreateListingPage() {
 	};
 
 	const handleCropConfirm = () => {
+		console.log('Crop confirm triggered with:', { cropPosition, cropScale, cropImage: cropImage ? 'exists' : 'null' });
+
 		// Create a canvas to crop the image
 		const canvas = document.createElement('canvas');
 		const ctx = canvas.getContext('2d');
 		const img = new Image();
 
 		img.onload = () => {
+			console.log('Image loaded:', { width: img.width, height: img.height });
+
 			const cropSize = 400; // Fixed crop area size
 			canvas.width = cropSize;
 			canvas.height = cropSize;
@@ -501,23 +505,44 @@ export default function CreateListingPage() {
 					displayedWidth = displaySize * imgAspectRatio;
 				}
 
-				// Calculate the scale factor between displayed and natural image
-				const scaleX = img.width / (displayedWidth * cropScale);
-				const scaleY = img.height / (displayedHeight * cropScale);
+				console.log('Display calculations:', {
+					imgAspectRatio,
+					displayedWidth,
+					displayedHeight,
+					cropScale,
+					cropPosition
+				});
 
-				// Calculate the crop area in natural image coordinates
-				// The crop area is always 400x400 in display coordinates
-				const cropAreaSize = displaySize / cropScale;
+				// Simplified cropping logic
+				// The crop area is always 400x400 pixels in the final output
+				const cropAreaSize = 400 / cropScale;
 
-				// Calculate the center offset of the displayed image
-				const offsetX = (displaySize - displayedWidth) / 2;
-				const offsetY = (displaySize - displayedHeight) / 2;
+				// Calculate the center of the displayed image
+				const centerX = displayedWidth / 2;
+				const centerY = displayedHeight / 2;
 
-				// Calculate the source rectangle in natural image coordinates
-				const sourceX = Math.max(0, (-cropPosition.x - offsetX) * scaleX);
-				const sourceY = Math.max(0, (-cropPosition.y - offsetY) * scaleY);
-				const sourceWidth = Math.min(cropAreaSize * scaleX, img.width - sourceX);
-				const sourceHeight = Math.min(cropAreaSize * scaleY, img.height - sourceY);
+				// Calculate the crop center based on position
+				const cropCenterX = centerX - cropPosition.x;
+				const cropCenterY = centerY - cropPosition.y;
+
+				// Convert to natural image coordinates
+				const scaleX = img.width / displayedWidth;
+				const scaleY = img.height / displayedHeight;
+
+				const sourceCenterX = cropCenterX * scaleX;
+				const sourceCenterY = cropCenterY * scaleY;
+
+				// Calculate source rectangle
+				const sourceWidth = cropAreaSize * scaleX;
+				const sourceHeight = cropAreaSize * scaleY;
+				const sourceX = Math.max(0, sourceCenterX - sourceWidth / 2);
+				const sourceY = Math.max(0, sourceCenterY - sourceHeight / 2);
+
+				console.log('Crop calculations:', {
+					scaleX, scaleY, cropAreaSize,
+					sourceX, sourceY, sourceWidth, sourceHeight,
+					cropCenterX, cropCenterY, sourceCenterX, sourceCenterY
+				});
 
 				// Clear canvas and draw the cropped portion
 				ctx.clearRect(0, 0, cropSize, cropSize);
@@ -528,6 +553,7 @@ export default function CreateListingPage() {
 				);
 
 				const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+				console.log('Cropped image created, size:', croppedDataUrl.length);
 				setImagePreview(croppedDataUrl);
 				setShowCropModal(false);
 
@@ -535,6 +561,7 @@ export default function CreateListingPage() {
 				fetch(croppedDataUrl)
 					.then(res => res.blob())
 					.then(blob => {
+						console.log('Blob created, size:', blob.size);
 						const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' });
 						setSelectedFile(file);
 					})
@@ -567,6 +594,13 @@ export default function CreateListingPage() {
 		setError('');
 
 		try {
+			console.log('Form submission started:', {
+				formData,
+				locationData,
+				selectedFile: selectedFile ? `File: ${selectedFile.name}, size: ${selectedFile.size}` : 'none',
+				user: user ? 'exists' : 'none'
+			});
+
 			// Validation
 			if (!formData.item_type || !formData.title.trim() || !formData.description.trim() || !locationData.address.trim() || !formData.date) {
 				throw new Error('Please fill in all required fields');
@@ -581,8 +615,10 @@ export default function CreateListingPage() {
 			// Step 1: Upload image (if present) - this is the most time-consuming part
 			let imageUrl = '';
 			if (selectedFile && user) {
+				console.log('Starting image upload...');
 				setLoadingStep('Uploading image...');
 				imageUrl = await uploadListingImage(selectedFile, user.id);
+				console.log('Image upload successful:', imageUrl);
 			}
 
 			// Step 2: Create listing in database
@@ -603,7 +639,9 @@ export default function CreateListingPage() {
 				extra_details: Object.keys(extraFields).length > 0 ? extraFields : null
 			};
 
+			console.log('Creating listing with data:', listingData);
 			const newListing = await addListing(listingData);
+			console.log('Listing created successfully:', newListing);
 
 			// Step 3: Start background processes (non-blocking)
 			// These can run in the background while we redirect the user
@@ -633,6 +671,7 @@ export default function CreateListingPage() {
 			// Step 4: Redirect immediately after listing is created
 			router.push('/');
 		} catch (err: unknown) {
+			console.error('Listing creation failed:', err);
 			const errorMessage = err instanceof Error ? err.message : 'Failed to create listing';
 			setError(errorMessage);
 		} finally {
