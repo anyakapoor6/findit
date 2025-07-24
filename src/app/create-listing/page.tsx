@@ -179,11 +179,10 @@ const CropContainer = styled.div`
 
 const CropArea = styled.div`
   position: relative;
-  width: 400px;
-  height: 400px;
+  width: 200px;
+  height: 200px;
   border: 2px solid #2563eb;
   border-radius: 8px;
-  overflow: hidden;
   margin: 16px 0;
   background: #f1f5f9;
 `;
@@ -940,7 +939,7 @@ export default function CreateListingPage() {
 							}}>
 								<strong style={{ color: '#2563eb' }}>💡 Pro Tip:</strong> Keep your image at <strong>100% zoom</strong> for the best result.
 								The crop area shows exactly how your image will appear in the listing.
-								If you zoom in too much, your image may appear too close-up in the final listing.
+								Position your image within the blue border for optimal results.
 							</div>
 						</div>
 						<CropArea
@@ -948,6 +947,7 @@ export default function CreateListingPage() {
 							onMouseMove={handleCropMouseMove}
 							onMouseUp={handleCropMouseUp}
 							onMouseLeave={handleCropMouseUp}
+							style={{ position: 'relative' }}
 						>
 							<CropImage
 								src={cropImage}
