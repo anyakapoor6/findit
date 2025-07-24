@@ -253,7 +253,7 @@ export default function CreateListingPage() {
 		description: '',
 		status: 'lost',
 		location: '',
-		date: new Date().toISOString().split('T')[0],
+		date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format in local timezone
 		image_url: ''
 	});
 	const [locationData, setLocationData] = useState<{ address: string; lat: number | undefined; lng: number | undefined }>({ address: '', lat: undefined, lng: undefined });
