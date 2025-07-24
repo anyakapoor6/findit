@@ -939,7 +939,7 @@ function ImageViewModal({ open, onClose, imageUrl, title }: { open: boolean, onC
 				}}>✕</button>
 				<h3 style={{
 					color: '#111',
-					marginBottom: 16,
+					marginBottom: 8,
 					fontSize: '1.2rem',
 					fontWeight: 600,
 					textAlign: 'center',
@@ -948,6 +948,13 @@ function ImageViewModal({ open, onClose, imageUrl, title }: { open: boolean, onC
 					textOverflow: 'ellipsis',
 					whiteSpace: 'nowrap'
 				}}>{title}</h3>
+				<p style={{
+					color: '#666',
+					fontSize: '0.9rem',
+					textAlign: 'center',
+					marginBottom: 16,
+					fontStyle: 'italic'
+				}}>Showing cropped preview (original image was cropped to fit listing)</p>
 				<div style={{
 					maxWidth: '100%',
 					maxHeight: 'calc(90vh - 120px)',
@@ -1156,7 +1163,7 @@ export default function ListingCard({
 					<CardImage src={listing.image_url} alt={listing.title} />
 				</ImageContainer>
 			) : (
-				<ImageContainer onClick={handleImageClick}>
+				<ImageContainer>
 					<Placeholder>
 						<PlaceholderEmoji>{getEmojiForCategory(listing.item_type)}</PlaceholderEmoji>
 						<PlaceholderText>No image available</PlaceholderText>
