@@ -284,8 +284,7 @@ export default function CreateListingPage() {
 	];
 	const [selectedType, setSelectedType] = useState<string>('');
 	const [selectedSubtype, setSelectedSubtype] = useState<string>('');
-	const [customType, setCustomType] = useState('');
-	const [customSubtype, setCustomSubtype] = useState('');
+
 	// Map of category to extra fields
 	const CATEGORY_FIELDS: Record<string, { label: string; name: string; type?: string; placeholder?: string; }[]> = {
 		electronics: [
@@ -427,12 +426,6 @@ export default function CreateListingPage() {
 		const type = e.target.value;
 		setSelectedType(type);
 		setSelectedSubtype('');
-		setCustomSubtype('');
-
-		// Don't clear customType if user is selecting "other"
-		if (type !== 'other') {
-			setCustomType('');
-		}
 
 		setFormData(prev => ({ ...prev, item_type: type, item_subtype: '' }));
 
@@ -442,7 +435,6 @@ export default function CreateListingPage() {
 	const handleSubtypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		const subtype = e.target.value;
 		setSelectedSubtype(subtype);
-		setCustomSubtype('');
 		setFormData(prev => ({ ...prev, item_subtype: subtype }));
 	};
 
@@ -596,9 +588,9 @@ export default function CreateListingPage() {
 			// Step 2: Create listing in database
 			setLoadingStep('Creating listing...');
 
-			// Use custom type/subtype values if "other" is selected
-			const finalItemType = formData.item_type === 'other' ? customType : formData.item_type;
-			const finalItemSubtype = formData.item_subtype === 'Other' || formData.item_type === 'other' ? customSubtype : formData.item_subtype;
+			// For "other" category, use "Other" as the type and no subtype
+			const finalItemType = formData.item_type === 'other' ? 'Other' : formData.item_type;
+			const finalItemSubtype = formData.item_type === 'other' ? '' : formData.item_subtype;
 
 			const listingData = {
 				...formData,
@@ -720,57 +712,25 @@ export default function CreateListingPage() {
 									<option key={type.value} value={type.value}>{type.label}</option>
 								))}
 							</StyledSelect>
-							{formData.item_type === 'other' && (
-								<StyledInput
-									type="text"
-									placeholder="Enter custom category"
-									value={customType}
-									onChange={e => {
-										setCustomType(e.target.value);
-										// Don't update formData.item_type until user finishes typing
-										// This prevents the dropdown from changing while typing
-									}}
-									onBlur={e => {
-										// Update formData.item_type when user finishes typing
-										setFormData(prev => ({ ...prev, item_type: e.target.value }));
-									}}
-									required
-									style={{ marginTop: 8 }}
-								/>
-							)}
+
 						</div>
-						{/* Subcategory */}
-						<div>
-							<Label>Subcategory</Label>
-							<StyledSelect
-								name="item_subtype"
-								value={formData.item_subtype || ''}
-								onChange={handleSubtypeChange}
-								disabled={!formData.item_type || formData.item_type === 'other' || !ITEM_TYPES.find(t => t.value === formData.item_type)}
-							>
-								<option value="">{formData.item_type && formData.item_type !== 'other' && ITEM_TYPES.find(t => t.value === formData.item_type) ? 'Select a subcategory' : 'Select a category first'}</option>
-								{ITEM_TYPES.find(t => t.value === formData.item_type)?.subtypes.map(sub => (
-									<option key={sub} value={sub}>{sub}</option>
-								))}
-							</StyledSelect>
-							{((formData.item_type === 'other') || (formData.item_subtype === 'Other' && formData.item_type !== 'other') || !ITEM_TYPES.find(t => t.value === formData.item_type)) && (
-								<StyledInput
-									type="text"
-									placeholder="Enter custom subcategory"
-									value={customSubtype}
-									onChange={e => {
-										setCustomSubtype(e.target.value);
-										// Don't update formData.item_subtype until user finishes typing
-									}}
-									onBlur={e => {
-										// Update formData.item_subtype when user finishes typing
-										setFormData(prev => ({ ...prev, item_subtype: e.target.value }));
-									}}
-									required
-									style={{ marginTop: 8 }}
-								/>
-							)}
-						</div>
+						{/* Subcategory - only show for non-other categories */}
+						{formData.item_type && formData.item_type !== 'other' && (
+							<div>
+								<Label>Subcategory</Label>
+								<StyledSelect
+									name="item_subtype"
+									value={formData.item_subtype || ''}
+									onChange={handleSubtypeChange}
+									disabled={!formData.item_type || !ITEM_TYPES.find(t => t.value === formData.item_type)}
+								>
+									<option value="">Select a subcategory</option>
+									{ITEM_TYPES.find(t => t.value === formData.item_type)?.subtypes.map(sub => (
+										<option key={sub} value={sub}>{sub}</option>
+									))}
+								</StyledSelect>
+							</div>
+						)}
 						{/* Title */}
 						<div>
 							<Label>Title *</Label>
