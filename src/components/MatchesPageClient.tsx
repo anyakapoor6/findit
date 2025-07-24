@@ -324,6 +324,13 @@ export default function MatchesPageClient() {
 		});
 	}
 
+	// Sort the listings by creation date (most recent first)
+	const sortedListingIds = Object.keys(matchesByUserListing).sort((a, b) => {
+		const listingA = matchesByUserListing[a].listing;
+		const listingB = matchesByUserListing[b].listing;
+		return new Date(listingB.created_at).getTime() - new Date(listingA.created_at).getTime();
+	});
+
 	// MOVED: All conditional returns to the end after all hooks are called
 	if (loading) {
 		return (
@@ -381,104 +388,107 @@ export default function MatchesPageClient() {
 					</CreateListingButton>
 				</EmptyState>
 			) : (
-				Object.entries(matchesByUserListing).map(([listingId, { listing, matches: listingMatches }]) => (
-					<MatchGroup key={listingId}>
-						<MatchHeader>
-							<div>
-								<SectionTitle>Matches for "{listing.title}"</SectionTitle>
-								<div style={{ color: '#666', fontSize: '0.875rem' }}>
-									{listing.status === 'lost' ? 'Lost' : 'Found'}  {listing.category}
-									{listing.subcategory && `  ${listing.subcategory}`}
-									{listing.location && `  ${listing.location}`}
+				sortedListingIds.map((listingId) => {
+					const { listing, matches: listingMatches } = matchesByUserListing[listingId];
+					return (
+						<MatchGroup key={listingId}>
+							<MatchHeader>
+								<div>
+									<SectionTitle>Matches for "{listing.title}"</SectionTitle>
+									<div style={{ color: '#666', fontSize: '0.875rem' }}>
+										{listing.status === 'lost' ? 'Lost' : 'Found'}  {listing.category}
+										{listing.subcategory && `  ${listing.subcategory}`}
+										{listing.location && `  ${listing.location}`}
+									</div>
 								</div>
-							</div>
-						</MatchHeader>
-						{listingMatches.map((match) => {
-							// Always show the user's listing on the left, the match on the right
-							const isUserListingLeft = match.listing_user_id === user.id;
-							const left = isUserListingLeft ? {
-								id: match.listing_id,
-								title: match.listing_title,
-								status: match.listing_status as ListingStatus,
-								item_type: match.listing_category,
-								item_subtype: match.listing_subcategory,
-								location: match.listing_location,
-								created_at: match.listing_created_at,
-								description: match.listing_description || '',
-								user_id: match.listing_user_id,
-								image_url: match.listing_image_url || undefined,
-								date: match.listing_created_at,
-								extra_details: match.listing_extra_details || undefined
-							} : {
-								id: match.matched_listing_id,
-								title: match.matched_listing_title,
-								status: match.matched_listing_status as ListingStatus,
-								item_type: match.matched_listing_category,
-								item_subtype: match.matched_listing_subcategory,
-								location: match.matched_listing_location,
-								created_at: match.matched_listing_created_at,
-								description: match.matched_listing_description || '',
-								user_id: match.matched_listing_user_id,
-								image_url: match.matched_listing_image_url || undefined,
-								date: match.matched_listing_created_at,
-								extra_details: match.matched_listing_extra_details || undefined
-							};
-							const right = isUserListingLeft ? {
-								id: match.matched_listing_id,
-								title: match.matched_listing_title,
-								status: match.matched_listing_status as ListingStatus,
-								item_type: match.matched_listing_category,
-								item_subtype: match.matched_listing_subcategory,
-								location: match.matched_listing_location,
-								created_at: match.matched_listing_created_at,
-								description: match.matched_listing_description || '',
-								user_id: match.matched_listing_user_id,
-								image_url: match.matched_listing_image_url || undefined,
-								date: match.matched_listing_created_at,
-								extra_details: match.matched_listing_extra_details || undefined
-							} : {
-								id: match.listing_id,
-								title: match.listing_title,
-								status: match.listing_status as ListingStatus,
-								item_type: match.listing_category,
-								item_subtype: match.listing_subcategory,
-								location: match.listing_location,
-								created_at: match.listing_created_at,
-								description: match.listing_description || '',
-								user_id: match.listing_user_id,
-								image_url: match.listing_image_url || undefined,
-								date: match.listing_created_at,
-								extra_details: match.listing_extra_details || undefined
-							};
-							return (
-								<MatchLayout key={match.match_id}>
-									{/* User's listing */}
-									<MatchCard>
-										<ListingCard listing={left} showActions={false} />
-									</MatchCard>
-									{/* Match score and reasons in the center */}
-									<MatchCenter>
-										<MatchScore $score={match.score} style={{ fontSize: '1.3rem', marginBottom: 8 }}>
-											<ScoreBar $score={match.score} />
-											{Math.round(match.score * 100)}% Match
-										</MatchScore>
-										{match.match_reasons.length > 0 && (
-											<MatchReasons style={{ justifyContent: 'center' }}>
-												{match.match_reasons.map((reason, index) => (
-													<ReasonTag key={index}>{reason}</ReasonTag>
-												))}
-											</MatchReasons>
-										)}
-									</MatchCenter>
-									{/* Matching listing */}
-									<MatchCard>
-										<ListingCard listing={right} showActions={false} />
-									</MatchCard>
-								</MatchLayout>
-							);
-						})}
-					</MatchGroup>
-				))
+							</MatchHeader>
+							{listingMatches.map((match) => {
+								// Always show the user's listing on the left, the match on the right
+								const isUserListingLeft = match.listing_user_id === user.id;
+								const left = isUserListingLeft ? {
+									id: match.listing_id,
+									title: match.listing_title,
+									status: match.listing_status as ListingStatus,
+									item_type: match.listing_category,
+									item_subtype: match.listing_subcategory,
+									location: match.listing_location,
+									created_at: match.listing_created_at,
+									description: match.listing_description || '',
+									user_id: match.listing_user_id,
+									image_url: match.listing_image_url || undefined,
+									date: match.listing_created_at,
+									extra_details: match.listing_extra_details || undefined
+								} : {
+									id: match.matched_listing_id,
+									title: match.matched_listing_title,
+									status: match.matched_listing_status as ListingStatus,
+									item_type: match.matched_listing_category,
+									item_subtype: match.matched_listing_subcategory,
+									location: match.matched_listing_location,
+									created_at: match.matched_listing_created_at,
+									description: match.matched_listing_description || '',
+									user_id: match.matched_listing_user_id,
+									image_url: match.matched_listing_image_url || undefined,
+									date: match.matched_listing_created_at,
+									extra_details: match.matched_listing_extra_details || undefined
+								};
+								const right = isUserListingLeft ? {
+									id: match.matched_listing_id,
+									title: match.matched_listing_title,
+									status: match.matched_listing_status as ListingStatus,
+									item_type: match.matched_listing_category,
+									item_subtype: match.matched_listing_subcategory,
+									location: match.matched_listing_location,
+									created_at: match.matched_listing_created_at,
+									description: match.matched_listing_description || '',
+									user_id: match.matched_listing_user_id,
+									image_url: match.matched_listing_image_url || undefined,
+									date: match.matched_listing_created_at,
+									extra_details: match.matched_listing_extra_details || undefined
+								} : {
+									id: match.listing_id,
+									title: match.listing_title,
+									status: match.listing_status as ListingStatus,
+									item_type: match.listing_category,
+									item_subtype: match.listing_subcategory,
+									location: match.listing_location,
+									created_at: match.listing_created_at,
+									description: match.listing_description || '',
+									user_id: match.listing_user_id,
+									image_url: match.listing_image_url || undefined,
+									date: match.listing_created_at,
+									extra_details: match.listing_extra_details || undefined
+								};
+								return (
+									<MatchLayout key={match.match_id}>
+										{/* User's listing */}
+										<MatchCard>
+											<ListingCard listing={left} showActions={false} />
+										</MatchCard>
+										{/* Match score and reasons in the center */}
+										<MatchCenter>
+											<MatchScore $score={match.score} style={{ fontSize: '1.3rem', marginBottom: 8 }}>
+												<ScoreBar $score={match.score} />
+												{Math.round(match.score * 100)}% Match
+											</MatchScore>
+											{match.match_reasons.length > 0 && (
+												<MatchReasons style={{ justifyContent: 'center' }}>
+													{match.match_reasons.map((reason, index) => (
+														<ReasonTag key={index}>{reason}</ReasonTag>
+													))}
+												</MatchReasons>
+											)}
+										</MatchCenter>
+										{/* Matching listing */}
+										<MatchCard>
+											<ListingCard listing={right} showActions={false} />
+										</MatchCard>
+									</MatchLayout>
+								);
+							})}
+						</MatchGroup>
+					);
+				})
 			)}
 		</Container>
 	);
