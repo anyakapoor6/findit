@@ -925,9 +925,24 @@ export default function CreateListingPage() {
 				<CropModal>
 					<CropContainer>
 						<h3 style={{ margin: '0 0 16px 0', fontSize: '1.3rem', fontWeight: 600 }}>Crop & Adjust Image</h3>
-						<p style={{ margin: '0 0 16px 0', color: '#666', textAlign: 'center' }}>
-							Drag to move, use zoom controls to adjust the crop area
-						</p>
+						<div style={{ margin: '0 0 16px 0', color: '#666', textAlign: 'center' }}>
+							<p style={{ margin: '0 0 8px 0' }}>
+								Drag to move, use zoom controls to adjust the crop area
+							</p>
+							<div style={{
+								background: '#f8fafc',
+								border: '1px solid #e2e8f0',
+								borderRadius: '8px',
+								padding: '12px',
+								margin: '8px 0',
+								fontSize: '0.9rem',
+								lineHeight: '1.4'
+							}}>
+								<strong style={{ color: '#2563eb' }}>💡 Pro Tip:</strong> Keep your image at <strong>100% zoom</strong> for the best result.
+								The crop area shows exactly how your image will appear in the listing.
+								If you zoom in too much, your image may appear too close-up in the final listing.
+							</div>
+						</div>
 						<CropArea
 							onMouseDown={handleCropMouseDown}
 							onMouseMove={handleCropMouseMove}
@@ -949,13 +964,38 @@ export default function CreateListingPage() {
 							<CropButton onClick={handleZoomOut} disabled={cropScale <= 0.5}>
 								🔍−
 							</CropButton>
-							<span style={{ display: 'flex', alignItems: 'center', padding: '0 12px', fontWeight: 600 }}>
+							<span style={{
+								display: 'flex',
+								alignItems: 'center',
+								padding: '0 12px',
+								fontWeight: 600,
+								color: Math.round(cropScale * 100) === 100 ? '#2563eb' : '#666',
+								background: Math.round(cropScale * 100) === 100 ? '#eff6ff' : 'transparent',
+								borderRadius: '4px',
+								paddingLeft: '8px',
+								paddingRight: '8px'
+							}}>
 								{Math.round(cropScale * 100)}%
+								{Math.round(cropScale * 100) === 100 && ' ✓'}
 							</span>
 							<CropButton onClick={handleZoomIn} disabled={cropScale >= 3}>
 								🔍+
 							</CropButton>
 						</CropControls>
+						{cropScale > 1.2 && (
+							<div style={{
+								color: '#dc2626',
+								fontSize: '0.85rem',
+								textAlign: 'center',
+								marginTop: '8px',
+								padding: '8px',
+								background: '#fef2f2',
+								border: '1px solid #fecaca',
+								borderRadius: '4px'
+							}}>
+								⚠️ You're zoomed in quite a bit. Consider zooming out to 100% for a better listing image.
+							</div>
+						)}
 						<CropControls style={{ marginTop: '8px' }}>
 							<CropButton onClick={handleCropConfirm}>
 								✓ Apply Crop
