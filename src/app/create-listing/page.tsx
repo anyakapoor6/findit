@@ -654,7 +654,7 @@ export default function CreateListingPage() {
 				) : Promise.resolve(),
 
 				// Trigger AI matching
-				fetch('/functions/v1/create-matches-for-listing', {
+				fetch('/api/create-matches', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ listingId: newListing.id }),

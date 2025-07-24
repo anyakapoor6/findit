@@ -166,20 +166,32 @@ BEGIN
     IF new_listing.item_type = opposite_listing.item_type THEN
       -- Same category: lower threshold, higher priority
       IF match_score > 0.25 AND same_category_matches < max_same_category_matches THEN
-        INSERT INTO matches (listing_id, matched_listing_id, score, match_reasons)
-        VALUES (new_listing_id, opposite_listing.id, match_score, reasons)
-        ON CONFLICT (listing_id, matched_listing_id) DO NOTHING;
-        same_category_matches := same_category_matches + 1;
+        -- Check if this match already exists in either direction
+        IF NOT EXISTS (
+          SELECT 1 FROM matches 
+          WHERE (listing_id = new_listing_id AND matched_listing_id = opposite_listing.id)
+             OR (listing_id = opposite_listing.id AND matched_listing_id = new_listing_id)
+        ) THEN
+          INSERT INTO matches (listing_id, matched_listing_id, score, match_reasons)
+          VALUES (new_listing_id, opposite_listing.id, match_score, reasons);
+          same_category_matches := same_category_matches + 1;
+        END IF;
       END IF;
     ELSE
       -- Cross category: higher threshold, only if image similarity is high
       IF match_score > 0.6 
          AND image_similarity_score > 0.1 
          AND cross_category_matches < max_cross_category_matches THEN
-        INSERT INTO matches (listing_id, matched_listing_id, score, match_reasons)
-        VALUES (new_listing_id, opposite_listing.id, match_score, reasons)
-        ON CONFLICT (listing_id, matched_listing_id) DO NOTHING;
-        cross_category_matches := cross_category_matches + 1;
+        -- Check if this match already exists in either direction
+        IF NOT EXISTS (
+          SELECT 1 FROM matches 
+          WHERE (listing_id = new_listing_id AND matched_listing_id = opposite_listing.id)
+             OR (listing_id = opposite_listing.id AND matched_listing_id = new_listing_id)
+        ) THEN
+          INSERT INTO matches (listing_id, matched_listing_id, score, match_reasons)
+          VALUES (new_listing_id, opposite_listing.id, match_score, reasons);
+          cross_category_matches := cross_category_matches + 1;
+        END IF;
       END IF;
     END IF;
     
