@@ -236,7 +236,7 @@ export class NotificationOrchestrator {
 	}
 }
 
-// Utility to send email notification via Supabase Edge Function
+// Utility to send email notification via our API endpoint
 export async function sendEmailNotification({
 	user_id,
 	type,
@@ -250,13 +250,20 @@ export async function sendEmailNotification({
 	listing_title?: string;
 	claim_status?: string;
 }) {
-	const functionUrl = 'https://jpppsktqnkbfzgegmsfq.functions.supabase.co/send_notification_email';
+	try {
+		const response = await fetch('/api/send-email', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ user_id, type, message, listing_title, claim_status }),
+		});
 
-	await fetch(functionUrl, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ user_id, type, message, listing_title, claim_status }),
-	});
+		if (!response.ok) {
+			console.error('Failed to send email notification:', response.statusText);
+		}
+	} catch (error) {
+		console.error('Error sending email notification:', error);
+		// Don't throw the error to prevent breaking the claim action
+	}
 }
 
 // Function to get notifications for a user

@@ -502,52 +502,42 @@ function ClaimModal({ open, onClose, listingId }: { open: boolean, onClose: () =
 			if (!description.trim() || !whereLost.trim()) {
 				throw new Error('Please fill in all required fields.');
 			}
-			// Get current user
+
+			// Get current user and session
 			const { data: { user } } = await supabase.auth.getUser();
 			if (!user) throw new Error('You must be signed in to submit a claim.');
-			let proof_image_url = '';
+
+			const { data: { session } } = await supabase.auth.getSession();
+			if (!session?.access_token) throw new Error('No valid session found.');
+
+			// Upload proof image if provided
+			let proofImageUrl = '';
 			if (file) {
-				proof_image_url = await uploadListingImage(file, user.id);
+				proofImageUrl = await uploadListingImage(file, user.id);
 			}
-			// Insert claim
-			const { data: claim, error: claimError } = await supabase
-				.from('claims')
-				.insert({
-					listing_id: listingId,
-					claimant_id: user.id,
+
+			// Submit claim via API endpoint
+			const response = await fetch('/api/submit-claim', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${session.access_token}`
+				},
+				body: JSON.stringify({
+					listingId,
 					description,
-					where_lost: whereLost,
+					location: whereLost,
 					contents,
-					proof_image_url,
-					status: 'pending',
+					proofImageUrl
 				})
-				.select()
-				.single();
-			if (claimError) throw claimError;
-			// Get listing to find owner
-			const { data: listing } = await supabase
-				.from('listings')
-				.select('user_id, title')
-				.eq('id', listingId)
-				.single();
-			// Insert notification for owner
-			if (listing && listing.user_id) {
-				await supabase.from('notifications').insert({
-					user_id: listing.user_id,
-					type: 'claim_submitted',
-					message: `A new claim was submitted for your found item "${listing.title}".`,
-					listing_id: listingId,
-					claim_id: claim.id,
-				});
-				// Send email notification with listing title
-				const notificationType: NotificationType = 'claim_submitted';
-				await sendEmailNotification({
-					user_id: listing.user_id,
-					type: notificationType,
-					message: `A new claim was submitted for your found item "${listing.title}".`,
-					listing_title: listing.title
-				});
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Failed to submit claim');
 			}
+
 			setSuccess(true);
 			setTimeout(() => {
 				setSuccess(false);
