@@ -532,29 +532,77 @@ export default function ProfilePageContent() {
 
 	// Accept/Reject claim
 	const handleClaimAction = async (claim: any, action: 'accepted' | 'rejected') => {
-		await supabase.from('claims').update({ status: action }).eq('id', claim.id);
-		// Notify claimant
-		await supabase.from('notifications').insert({
-			user_id: claim.claimant_id,
-			type: action === 'accepted' ? 'claim_accepted' : 'claim_rejected',
-			message: action === 'accepted'
-				? 'Your claim was accepted! The owner will contact you soon.'
-				: 'Your claim was rejected by the item finder.',
-			listing_id: claim.listing_id,
-			claim_id: claim.id,
-		});
-		// Send email notification to claimant
-		const notificationType: NotificationType = action === 'accepted' ? 'claim_accepted' : 'claim_rejected';
-		await sendEmailNotification({
-			user_id: claim.claimant_id,
-			type: notificationType,
-			message: action === 'accepted'
-				? `Your claim for "${claim.listingTitle}" was accepted! The owner will contact you soon.`
-				: `Your claim for "${claim.listingTitle}" was rejected by the item finder.`,
-			listing_title: claim.listingTitle,
-			claim_status: action,
-		});
-		setMyClaims((prev) => prev.map(c => c.id === claim.id ? { ...c, status: action } : c));
+		try {
+			// Update claim status in database
+			const { error: updateError } = await supabase.from('claims').update({ status: action }).eq('id', claim.id);
+			if (updateError) {
+				console.error('Error updating claim status:', updateError);
+				return;
+			}
+
+			// Notify claimant
+			await supabase.from('notifications').insert({
+				user_id: claim.claimant_id,
+				type: action === 'accepted' ? 'claim_accepted' : 'claim_rejected',
+				message: action === 'accepted'
+					? 'Your claim was accepted! The owner will contact you soon.'
+					: 'Your claim was rejected by the item finder.',
+				listing_id: claim.listing_id,
+				claim_id: claim.id,
+			});
+
+			// Send email notification to claimant
+			const notificationType: NotificationType = action === 'accepted' ? 'claim_accepted' : 'claim_rejected';
+			await sendEmailNotification({
+				user_id: claim.claimant_id,
+				type: notificationType,
+				message: action === 'accepted'
+					? `Your claim for "${claim.listingTitle}" was accepted! The owner will contact you soon.`
+					: `Your claim for "${claim.listingTitle}" was rejected by the item finder.`,
+				listing_title: claim.listingTitle,
+				claim_status: action,
+			});
+
+			// Update both state variables to reflect the change
+			setMyClaims((prev) => prev.map(c => c.id === claim.id ? { ...c, status: action } : c));
+			setUserClaims((prev) => prev.map(c => c.id === claim.id ? { ...c, status: action } : c));
+
+			// Refresh claims data to ensure UI is up to date
+			if (user) {
+				if (activeTab === 'claims') {
+					// Refetch claims on my listings
+					const { data: listings } = await supabase
+						.from('listings')
+						.select('id, title')
+						.eq('user_id', user.id);
+					if (listings && listings.length > 0) {
+						const listingIds = listings.map((l: any) => l.id);
+						const { data: claims } = await supabase
+							.from('claims')
+							.select('*, claimant:claimant_id(name, email)')
+							.in('listing_id', listingIds)
+							.order('created_at', { ascending: false });
+						const claimsWithTitle = (claims || []).map((c: any) => ({
+							...c,
+							listingTitle: listings.find((l: any) => l.id === c.listing_id)?.title || 'Listing',
+						}));
+						setMyClaims(claimsWithTitle);
+					}
+				} else if (activeTab === 'userClaims') {
+					// Refetch user claims
+					const { data: claims } = await supabase
+						.from('claims')
+						.select('*, listing:listings(*)')
+						.eq('claimant_id', user.id)
+						.order('created_at', { ascending: false });
+					setUserClaims(claims || []);
+				}
+			}
+
+			console.log(`✅ Claim ${claim.id} ${action} successfully`);
+		} catch (error) {
+			console.error('Error handling claim action:', error);
+		}
 	};
 
 	const handleListingUpdated = async (updatedListing: Listing) => {
@@ -921,16 +969,12 @@ export default function ProfilePageContent() {
 									borderColor: claim.status === 'accepted' ? '#4ade80' : claim.status === 'rejected' ? '#fca5a5' : undefined
 								}}>{claim.status?.toUpperCase()}</ClaimStatus>
 							</div>
-							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Finder:</b> {finderProfiles[claim.listing?.user_id]?.email || claim.listing?.user_id}</div>
+							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Finder:</b> {claim.status === 'accepted' ? (finderProfiles[claim.listing?.user_id]?.email || claim.listing?.user_id) : 'Contact info will be shown when claim is accepted'}</div>
 							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Features/Marks:</b> {claim.description}</div>
 							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Where lost:</b> {claim.where_lost}</div>
 							{claim.contents && <div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Contents:</b> {claim.contents}</div>}
 							{claim.proof_image_url && <div style={{ margin: '0.7rem 0' }}><img src={claim.proof_image_url} alt="Proof" style={{ maxWidth: 120, borderRadius: 8 }} /></div>}
-							{claim.status === 'accepted' && claim.listing && (
-								<div style={{ color: '#059669', fontWeight: 600, margin: '0.7rem 0' }}>
-									Contact the finder: {finderProfiles[claim.listing.user_id]?.email || claim.listing.user_id}
-								</div>
-							)}
+
 						</ClaimCard>
 					))}
 				</ClaimsSection>
@@ -949,16 +993,12 @@ export default function ProfilePageContent() {
 								<span style={{ fontWeight: 600, fontSize: '1.08rem' }}>{claim.listingTitle}</span>
 								<ClaimStatus $status={claim.status}>{claim.status.toUpperCase()}</ClaimStatus>
 							</div>
-							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Claimant:</b> {claim.claimant?.name || claim.claimant?.email || 'Unknown'}</div>
+							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Claimant:</b> {claim.status === 'accepted' ? (claim.claimant?.name || claim.claimant?.email || 'Unknown') : 'Contact info will be shown when claim is accepted'}</div>
 							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Features/Marks:</b> {claim.description}</div>
 							<div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Where lost:</b> {claim.where_lost}</div>
 							{claim.contents && <div style={{ fontSize: '0.98rem', marginBottom: 6 }}><b>Contents:</b> {claim.contents}</div>}
 							{claim.proof_image_url && <div style={{ margin: '0.7rem 0' }}><img src={claim.proof_image_url} alt="Proof" style={{ maxWidth: 120, borderRadius: 8 }} /></div>}
-							{claim.status === 'accepted' && (
-								<div style={{ color: '#059669', fontWeight: 600, margin: '0.7rem 0' }}>
-									Claimant contact: {claim.claimant?.email}
-								</div>
-							)}
+
 							{claim.status === 'pending' && (
 								<div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
 									<button onClick={() => handleClaimAction(claim, 'accepted')} style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '0.6rem 1.2rem', fontWeight: 600, fontSize: '1.05rem', cursor: 'pointer' }}>Accept</button>

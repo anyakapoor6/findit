@@ -465,19 +465,12 @@ export default function MatchesPageClient() {
 										<MatchCard>
 											<ListingCard listing={left} showActions={false} />
 										</MatchCard>
-										{/* Match score and reasons in the center */}
+										{/* Match score in the center */}
 										<MatchCenter>
-											<MatchScore $score={match.score} style={{ fontSize: '1.3rem', marginBottom: 8 }}>
+											<MatchScore $score={match.score} style={{ fontSize: '1.3rem' }}>
 												<ScoreBar $score={match.score} />
 												{Math.round(match.score * 100)}% Match
 											</MatchScore>
-											{match.match_reasons.length > 0 && (
-												<MatchReasons style={{ justifyContent: 'center' }}>
-													{match.match_reasons.map((reason, index) => (
-														<ReasonTag key={index}>{reason}</ReasonTag>
-													))}
-												</MatchReasons>
-											)}
 										</MatchCenter>
 										{/* Matching listing */}
 										<MatchCard>
