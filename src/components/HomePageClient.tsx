@@ -141,7 +141,7 @@ export default function HomePageClient() {
 	const highlightedRef = useRef<HTMLDivElement | null>(null);
 	const [showHighlight, setShowHighlight] = useState(false);
 
-	// Sync filter state with URL
+	// Sync filter state with URL (preserve listingId for auto-scroll)
 	useEffect(() => {
 		const params = new URLSearchParams();
 		if (search) params.set('q', search);
@@ -150,9 +150,16 @@ export default function HomePageClient() {
 		if (category) params.set('category', category);
 		if (subcategory) params.set('subcategory', subcategory);
 		if (date) params.set('date', date);
+
+		// Preserve listingId parameter if it exists
+		const currentListingId = searchParams?.get('listingId');
+		if (currentListingId) {
+			params.set('listingId', currentListingId);
+		}
+
 		const url = params.toString() ? `/?${params.toString()}` : '/';
 		window.history.replaceState(null, '', url);
-	}, [search, status, location, category, subcategory, date]);
+	}, [search, status, location, category, subcategory, date, searchParams]);
 
 	// On mount, read filters from URL
 	useEffect(() => {
@@ -234,43 +241,6 @@ export default function HomePageClient() {
 		}
 	}, [userChecked, showSignIn]);
 
-	// Enhanced highlighting effect for map navigation
-	useEffect(() => {
-		console.log('Highlight effect triggered:', { highlightedId, listingsLength: listings.length });
-		if (highlightedId && listings.length > 0) {
-			// Find the listing to highlight
-			const listingToHighlight = listings.find(listing => listing.id === highlightedId);
-			console.log('Found listing to highlight:', listingToHighlight);
-			if (listingToHighlight) {
-				// Apply highlight immediately
-				setShowHighlight(true);
-
-				// Scroll to the highlighted listing after a short delay to ensure DOM is ready
-				setTimeout(() => {
-					if (highlightedRef.current) {
-						console.log('Scrolling to highlighted listing');
-						highlightedRef.current.scrollIntoView({
-							behavior: 'smooth',
-							block: 'center'
-						});
-					}
-				}, 200);
-
-				// Remove highlight after 5 seconds (increased for better visibility)
-				const timer = setTimeout(() => setShowHighlight(false), 5000);
-				return () => clearTimeout(timer);
-			}
-		} else {
-			// Reset highlight when no highlightedId
-			setShowHighlight(false);
-		}
-	}, [highlightedId, listings]);
-
-	const handleSignInSuccess = () => {
-		setShowSignIn(false);
-		setTimeout(() => window.location.reload(), 100);
-	};
-
 	// Filtered listings
 	const filteredListings = listings.filter(listing => {
 		if (listing.status === 'resolved') return false;
@@ -291,6 +261,70 @@ export default function HomePageClient() {
 			!date || dbDate === date;
 		return matchesKeyword && matchesStatus && matchesLocation && matchesCategory && matchesSubcategory && matchesDate;
 	});
+
+	// Enhanced highlighting effect for map navigation
+	useEffect(() => {
+		console.log('Highlight effect triggered:', { highlightedId, listingsLength: listings.length });
+		if (highlightedId && listings.length > 0) {
+			// Find the listing to highlight
+			const listingToHighlight = listings.find(listing => listing.id === highlightedId);
+			console.log('Found listing to highlight:', listingToHighlight);
+
+			// Check if the listing is visible in filtered results
+			const isVisibleInFiltered = filteredListings.some(listing => listing.id === highlightedId);
+			console.log('Is listing visible in filtered results:', isVisibleInFiltered);
+
+			if (listingToHighlight) {
+				// If listing is not visible due to filters, clear them
+				if (!isVisibleInFiltered) {
+					console.log('Clearing filters to show highlighted listing');
+					setSearch('');
+					setStatus('all');
+					setLocation('');
+					setCategory('');
+					setSubcategory('');
+					setDate('');
+				}
+
+				// Apply highlight immediately
+				setShowHighlight(true);
+
+				// Scroll to the highlighted listing after a delay to ensure DOM is ready
+				setTimeout(() => {
+					if (highlightedRef.current) {
+						console.log('Scrolling to highlighted listing');
+						highlightedRef.current.scrollIntoView({
+							behavior: 'smooth',
+							block: 'center'
+						});
+					} else {
+						// Fallback: try scrolling again after a bit more time in case the DOM wasn't ready
+						setTimeout(() => {
+							if (highlightedRef.current) {
+								console.log('Fallback scroll to highlighted listing');
+								highlightedRef.current.scrollIntoView({
+									behavior: 'smooth',
+									block: 'center'
+								});
+							}
+						}, 300);
+					}
+				}, 300);
+
+				// Remove highlight after 8 seconds for better visibility
+				const timer = setTimeout(() => setShowHighlight(false), 8000);
+				return () => clearTimeout(timer);
+			}
+		} else {
+			// Reset highlight when no highlightedId
+			setShowHighlight(false);
+		}
+	}, [highlightedId, listings, filteredListings]);
+
+	const handleSignInSuccess = () => {
+		setShowSignIn(false);
+		setTimeout(() => window.location.reload(), 100);
+	};
 
 	return (
 		<section style={{ minHeight: '80vh', background: 'linear-gradient(to bottom, #f9fafb, #e0e7ef 30%)', padding: '2rem 0' }}>
